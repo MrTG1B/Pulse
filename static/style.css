@@ -357,27 +357,31 @@ summary,
   overflow-x: hidden;
   -webkit-app-region: no-drag !important;
   overscroll-behavior-y: contain;
-  scroll-behavior: smooth;
-  padding: 12px 12px 28px 12px;
+  padding: 12px 12px 32px 12px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   background-color: var(--bg-app);
 }
 
+.main-content > * {
+  flex-shrink: 0 !important;
+  -webkit-app-region: no-drag !important;
+}
+
 .main-content::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .main-content::-webkit-scrollbar-track {
-  background: rgba(10, 10, 10, 0.6);
-  border-radius: 4px;
+  background: rgba(17, 17, 17, 0.9);
+  border-radius: 6px;
 }
 
 .main-content::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
-  border: 1px solid var(--surface);
+  background: #383838;
+  border-radius: 6px;
+  border: 2px solid #111111;
 }
 
 .main-content::-webkit-scrollbar-thumb:hover {
@@ -1240,13 +1244,31 @@ details[open] summary .summary-caret {
 
 .models-overview-content {
   padding: 8px 10px;
-  max-height: 240px;
+  max-height: 280px;
   overflow-y: auto;
   border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 4px;
   -webkit-app-region: no-drag !important;
+}
+
+.models-overview-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.models-overview-content::-webkit-scrollbar-track {
+  background: rgba(17, 17, 17, 0.9);
+  border-radius: 4px;
+}
+
+.models-overview-content::-webkit-scrollbar-thumb {
+  background: #383838;
+  border-radius: 4px;
+}
+
+.models-overview-content::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
 }
 
 .model-row-item {

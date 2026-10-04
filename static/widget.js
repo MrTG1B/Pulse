@@ -38,6 +38,7 @@
   // DOM Elements
   const el = {
     container: document.getElementById('widgetContainer'),
+    mainContent: document.getElementById('mainContent'),
     headerPulseDot: document.getElementById('headerPulseDot'),
     btnPin: document.getElementById('btnPin'),
     btnCompact: document.getElementById('btnCompact'),
@@ -314,6 +315,7 @@
     setupKeyboardShortcuts();
     setupExternalLinks();
     setupAudioUnlocking();
+    setupScrollHandling();
   }
 
   // --- Load Initial Data ---
@@ -1172,6 +1174,95 @@
     };
     document.addEventListener('pointerdown', unlock);
     document.addEventListener('keydown', unlock);
+  }
+
+  // --- Smooth Scrolling & Interaction Controller ---
+  function setupScrollHandling() {
+    const main = el.mainContent || document.getElementById('mainContent');
+    if (!main) return;
+
+    // Direct wheel scrolling listener (guarantees mouse wheel scrolls main container smoothly)
+    window.addEventListener('wheel', (e) => {
+      // If mouse is over an inner scrollable element with its own active overflow
+      const innerScrollable = (e.target && typeof e.target.closest === 'function')
+        ? e.target.closest('.models-overview-content, .help-body, .modal-body')
+        : null;
+      if (innerScrollable && innerScrollable.scrollHeight > innerScrollable.clientHeight) {
+        const atTop = innerScrollable.scrollTop <= 0 && e.deltaY < 0;
+        const atBottom = (innerScrollable.scrollTop + innerScrollable.clientHeight >= innerScrollable.scrollHeight - 1) && e.deltaY > 0;
+        if (!atTop && !atBottom) {
+          return;
+        }
+      }
+
+      if (main.scrollHeight > main.clientHeight) {
+        main.scrollTop += e.deltaY;
+      }
+    }, { passive: true });
+
+    // Auto-scroll into view when accordions open
+    const modelsOverview = document.getElementById('modelsOverview');
+    if (modelsOverview) {
+      modelsOverview.addEventListener('toggle', () => {
+        if (modelsOverview.open) {
+          setTimeout(() => {
+            modelsOverview.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }, 60);
+        }
+      });
+    }
+
+    const noticeDetails = document.querySelector('.notice-details');
+    if (noticeDetails) {
+      noticeDetails.addEventListener('toggle', () => {
+        if (noticeDetails.open) {
+          setTimeout(() => {
+            noticeDetails.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }, 60);
+        }
+      });
+    }
+
+    // Keyboard navigation scrolling
+    window.addEventListener('keydown', (e) => {
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+      if (e.key === 'ArrowDown') {
+        main.scrollTop += 45;
+        e.preventDefault();
+      } else if (e.key === 'ArrowUp') {
+        main.scrollTop -= 45;
+        e.preventDefault();
+      } else if (e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) {
+        main.scrollTop += 220;
+        e.preventDefault();
+      } else if (e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) {
+        main.scrollTop -= 220;
+        e.preventDefault();
+      } else if (e.key === 'Home') {
+        main.scrollTop = 0;
+        e.preventDefault();
+      } else if (e.key === 'End') {
+        main.scrollTop = main.scrollHeight;
+        e.preventDefault();
+      }
+    });
+
+    // Touchpad and touch drag scrolling
+    let touchStartY = 0;
+    let touchStartScrollTop = 0;
+    main.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        touchStartY = e.touches[0].clientY;
+        touchStartScrollTop = main.scrollTop;
+      }
+    }, { passive: true });
+
+    main.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1) {
+        const deltaY = touchStartY - e.touches[0].clientY;
+        main.scrollTop = touchStartScrollTop + deltaY;
+      }
+    }, { passive: true });
   }
 
   // --- Settings Modal ---
