@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatic asset extraction and resolution via `sys._MEIPASS`.
   - Portable persistent configuration fallback (`config.json` next to executable or in `%APPDATA%/Pulse`).
   - Multi-resolution Windows app icon (16x16 to 256x256).
-- **Commercial Dark FinTech Design System**:
+- **High-Contrast Dark Theme**:
   - High-contrast industrial palette (`#0A0A0A` background, `#111111` surface, `#171717` elevated, `#242424` border, `#B8FF3D` lime accent).
   - Semantic status colors: Lime (Active / 200), Amber (Scheduled / Pool), Red (Exhausted / 402 / 503), Gray (Offline).
   - Compact mini-dock mode (`390×100px`) for zero-distraction floating status bar.
@@ -28,19 +28,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Intelligent Diagnostics & Model Routing**:
   - Automatic detection and actionable recovery advice for `HTTP 402 Budget Pool Quota Exhausted`.
   - Automatic detection and fallback advice for `HTTP 503 No Channel`.
-  - 1-click fallback buttons to switch to uninterrupted models (`deepseek-v4-flash`, `deepseek-chat`, `glm-4-plus`).
+  - 1-click fallback buttons to switch to uninterrupted models (`deepseek-v4-flash`).
   - Dynamic model discovery from AgentRouter API (`/v1/models`).
   - Batch diagnostic probe ("Test All").
   - Model category filter chips (All, Active, Uninterrupted, Quota Pool).
 - **Comprehensive User Help & Documentation Modal**:
   - In-app interactive guide with 5 tabbed sections (Quick Start, Quota Drops, Models & Pools, Troubleshooting, Shortcuts).
   - Direct helper links to AgentRouter Console and status endpoints.
-- **Complete Commercial Compliance Documentation**:
+- **Comprehensive Developer Documentation**:
   - `LICENSE` (MIT License)
   - `SECURITY.md` (Security Policy & Vulnerability Reporting)
   - `CONTRIBUTING.md` (Contributor & Developer Guide)
-  - `USER_GUIDE.md` (Comprehensive Commercial User Manual)
-  - `README.md` (Professional project overview)
+  - `USER_GUIDE.md` (Comprehensive User Manual)
+  - `README.md` (Project overview)
 
 ### Fixed
 - Fixed potential `AttributeError` with `NoneType` stdio handles when launching PyInstaller with `--noconsole` on Windows.

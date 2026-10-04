@@ -1,103 +1,98 @@
-# Pulse
+# PULSE
 
-[![Latest Release](https://img.shields.io/github/v/release/MrTG1B/Pulse?style=flat-square&color=B8FF3D&label=Latest%20Release)](https://github.com/MrTG1B/Pulse/releases/latest)
+> **Know when your models are ready.**
+
 [![Download Pulse.exe](https://img.shields.io/badge/Download-Pulse.exe%20(v1.0.0)-B8FF3D?style=flat-square&logo=windows&logoColor=0A0A0A&labelColor=111111)](https://github.com/MrTG1B/Pulse/releases/download/v1.0.0/Pulse.exe)
-[![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20(64--bit)-0078D6?style=flat-square&logo=windows)](https://github.com/MrTG1B/Pulse/releases/latest)
+[![Latest Release](https://img.shields.io/github/v/release/MrTG1B/Pulse?style=flat-square&color=B8FF3D&label=Latest%20Release)](https://github.com/MrTG1B/Pulse/releases/latest)
 [![Target Service](https://img.shields.io/badge/target%20service-agentrouter.org-B8FF3D?style=flat-square&labelColor=111111)](https://agentrouter.org)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20(64--bit)-0078D6?style=flat-square&logo=windows)](https://github.com/MrTG1B/Pulse/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-43%2F43%20passed-brightgreen?style=flat-square)](tests)
+[![Tests](https://img.shields.io/badge/tests-46%2F46%20passed-brightgreen?style=flat-square)](tests)
 
-> ### ⚡ Quick Download
-> 📦 **[Download Standalone Pulse.exe (v1.0.0)](https://github.com/MrTG1B/Pulse/releases/download/v1.0.0/Pulse.exe)** (31.5 MB) — Zero installation or Python required. Runs out of the box with no terminal window.
+[ **Download for Windows** ](https://github.com/MrTG1B/Pulse/releases/download/v1.0.0/Pulse.exe) • [ **User Guide** ](docs/USER_GUIDE.md) • [ **Security Policy** ](docs/SECURITY.md) • [ **GitHub Release** ](https://github.com/MrTG1B/Pulse/releases/tag/v1.0.0)
 
-**Pulse** is a lightweight, high-performance, commercial-grade floating desktop monitor and telemetry widget designed specifically for **[AgentRouter](https://agentrouter.org/)**.
+![Pulse Social Preview](assets/social_preview.png)
 
-Pulse delivers real-time gateway health monitoring, automated HTTP 402/401/503 error diagnostics, secure API key management, dynamic model discovery, and precision countdown tickers for scheduled daily quota replenishments in your local timezone.
+**Pulse** monitors AgentRouter availability for developers using **Claude Code** and **Codex**.
+
+```text
+┌───────────────────────────────────────────────┐
+│ ● Claude Opus 4.8                             │
+│   AVAILABLE                                   │
+│                                               │
+│ Next quota window                             │
+│ 16:30 IST                                     │
+│                                               │
+│ GPT-6 Astra                   ● AVAILABLE     │
+└───────────────────────────────────────────────┘
+```
+
+### Stop checking AgentRouter manually.
+Getting **`402 Budget pool quota has been exhausted`** on AgentRouter?  
+Pulse watches model availability, quota replenishment windows, and gateway connectivity so you know the exact minute Claude and GPT are ready to code.
 
 ---
 
-## 🎨 Commercial Dark FinTech Design System
+## ⚡ Why Pulse?
 
-Pulse follows a high-contrast industrial Dark FinTech aesthetic engineered for developer environments:
+When you're building with **Claude Code**, **Codex**, or AgentRouter API tokens, shared budget pools run dry during peak hours. Manually sending test prompts or refreshing status dashboards wastes time and disrupts your coding flow.
 
-| Element | Hex Code | Description |
+Pulse runs as a lightweight, always-on-top desktop widget that sits alongside your IDE or terminal. It continuously tracks model health, calculates the exact countdown to the next quota drop in your local timezone, and alerts you the moment capacity is restored.
+
+### Features
+- **AgentRouter Availability Monitoring**: Real-time HTTP health and latency tracking directly against `agentrouter.org`.
+- **HTTP 402 Quota Detection**: Instantly recognizes budget pool exhaustion and provides 1-click fallback to uninterrupted models.
+- **Local Timezone Countdown**: Precision countdown tickers to official drop batches (`07:30 AM` and `04:30 PM IST` / `02:00` and `11:00 UTC`).
+- **Compatible AgentRouter Client Headers**: Uses authentic client identification profiles (`claude-cli/1.0.108`) to ensure seamless interoperability for Claude Code and Codex workflows.
+- **Dynamic Model Discovery**: Auto-detects all available models on your account token with live response time benchmarks.
+- **Hardware-Backed Key Encryption**: Protects API keys at rest using **Windows DPAPI** (`CryptProtectData`). Plaintext keys are never stored on disk.
+- **Always-on-Top Floating Widget**: Sleek, distraction-free desktop window with a 1-click compact mini-dock mode.
+
+---
+
+## 🔄 The Quota Lifecycle Flow
+
+```
+402 QUOTA EXHAUSTED  ──>  Countdown to Next Window (07:30 / 16:30 IST)  ──>  🔔 Chime Alert  ──>  🟢 AVAILABLE (200 OK)
+```
+
+1. **Detection**: AgentRouter returns `HTTP 402 Budget pool quota has been exhausted`.
+2. **Countdown**: Pulse calculates the exact time remaining until the next replenishment window:
+   - **Morning Batch**: `10:00 AM Beijing` (02:00 UTC / `07:30 AM IST`)
+   - **Evening Batch**: `07:00 PM Beijing` (11:00 UTC / `04:30 PM IST`)
+3. **Notification**: Audio chime sounds when the replenishment window opens.
+4. **Availability**: Live diagnostic confirms `HTTP 200 OK` — your models are immediately ready for Claude Code and Codex tasks.
+
+---
+
+## 🔍 Solving Common AgentRouter Issues
+
+| Issue / Search Query | What It Means | How Pulse Solves It |
 |---|---|---|
-| **Background** | `#0A0A0A` | Deep contrast workspace foundation |
-| **Surface** | `#111111` | Primary container cards |
-| **Elevated** | `#171717` | Hover states, drawers, and active surfaces |
-| **Border** | `#242424` | Crisp, subtle structural separation |
-| **Primary Text** | `#F5F5F5` | High-readability header and body copy |
-| **Secondary Text** | `#8A8A8A` | Subtitles, labels, and timestamps |
-| **Accent (Lime)** | `#B8FF3D` | Brand identity and primary CTA |
-| **Accent Subtle** | `#1D2910` | Badges and active indicator backgrounds |
-
-### Semantic Status Indicators
-- **Lime (`#B8FF3D`)** — **Available / Active**: Connected and quota available (HTTP 200).
-- **Amber (`#FFB84D`)** — **Scheduled / Waiting**: Quota refill pending or channel discovery needed.
-- **Red (`#FF4D4D`)** — **Exhausted / Error**: Daily budget pool exhausted (HTTP 402), unauthorized (401), or no channel (503).
-- **Gray (`#666666`)** — **Offline / Unknown**: Network disconnect or unreachable gateway.
+| **`402 Budget pool quota has been exhausted`** | The shared Claude / GPT pool has reached its daily limit. | Tracks the exact countdown until quota resets; provides 1-click switch to `deepseek-v4-flash`. |
+| **`401 unauthorized client detected`** | Gateway rejected unrecognized or bare HTTP headers. | Automatically sends authentic, compatible client headers (`claude-cli/1.0.108`). |
+| **`503 no available channel in group`** | Model is not routed in your token's assigned channel group. | Identifies active channel models (`deepseek-v4-flash`) and provides live model discovery. |
+| **AgentRouter Claude Code connectivity** | CLI coding tools fail silently during pool outages. | Float Pulse next to VS Code / terminal to know when Claude is ready before running commands. |
 
 ---
 
-## 🌟 Key Capabilities
+## 📦 Download & Quick Start
 
-### 1. Standalone Single-File Windows Executable (No Terminal)
-- Packaged as a clean, single-file `.exe` with **no console/terminal popup** on launch (`--noconsole --onefile`).
-- Embedded multi-resolution icon metadata (`icon.ico`).
-- Fully self-extracting runtime assets (`static/`, `config.example.json`) with zero external dependency requirements.
-- Portable persistence: saves settings in `config.json` next to the executable or in `%APPDATA%/Pulse`.
+### Option 1: Standalone Windows App (No Python Needed)
+1. Download **[Pulse.exe (v1.0.0)](https://github.com/MrTG1B/Pulse/releases/download/v1.0.0/Pulse.exe)** (31.5 MB).
+2. Double-click to launch. No installer, no terminal window, no dependencies.
+3. Click **Enter Key** in the top bar to paste your AgentRouter API key (`sk-...`).
 
-### 2. Zero-Hang Diagnostics & WAF Bypass
-- Employs allowlisted client wire profiles (`claude-cli/1.0.108`) to prevent `401 unauthorized client detected` Cloudflare / AgentRouter WAF blocks.
-- Asynchronous `AbortController` timeouts and thread isolation guarantee the desktop window never freezes or displays Windows "Not Responding" prompts.
-
-### 3. Intelligent HTTP 402 & 503 Handlers
-- **HTTP 402 (Budget Pool Exhausted)**: Displays exact time remaining until the next replenishment batch with a 1-click fallback button to active uninterrupted models.
-- **HTTP 503 (No Channel in Group)**: Translates channel group constraints and provides 1-click switching to verified active models (`deepseek-v4-flash`).
-
-### 4. Precision Quota Countdown & Local Time Translation
-Tracks official AgentRouter release batches (10:00 & 19:00 Beijing Time / 02:00 & 11:00 UTC):
-- **User Local Time (IST / UTC+05:30)**:
-  - **Batch 1 (Morning)**: `07:30 AM IST`
-  - **Batch 2 (Afternoon/Evening)**: `04:30 PM IST`
-- Live real-time ticker (`HH:MM:SS`) with progress bar and Web Audio release chime.
-
-### 5. Dynamic Model Discovery & Live Status
-- Auto-discovers models available to your token (`/v1/models`).
-- Real-time latency tracking (ms) and status prefix badges in the model selector.
-- 1-click **Test All** batch diagnostic probe.
-- Category filter chips: `All`, `🟢 Active`, `⚡ Uninterrupted`, `⏱️ Quota Pool`.
-
-### 6. Always-on-Top Floating Widget & Mini-Dock
-- Native Microsoft Edge WebView2 frameless floating window.
-- **Pin Toggle**: Keeps widget floating over code editors (Cursor, VS Code) and terminals.
-- **Compact Mini-Dock**: Collapses into a sleek `390×100px` floating status bar.
-- Interactive in-app **Help & User Guide** modal with tabs for rapid onboarding and troubleshooting.
-
-### 7. Hardware-Backed Local Key Encryption (Windows DPAPI)
-- Local encrypted storage using **Windows Data Protection API (DPAPI)** (`CryptProtectData`).
-- Keys are encrypted with keys bound to your Windows user credentials; plaintext keys are **never stored on disk**.
-- In-place Edit drawer with password eye toggle (`👁️`), save, and wipe options.
-- Automatic migration of legacy unencrypted configurations on startup.
-
----
-
-## 🚀 Getting Started
-
-### Method 1: Run Standalone Executable (Recommended)
-1. Download or build `Pulse.exe`.
-2. Double-click `Pulse.exe` to run. No installation or Python required!
-
-### Method 2: Run from Python Source
+### Option 2: Run from Python Source
 ```powershell
-# Clone repository
+# 1. Clone the repository
 git clone https://github.com/MrTG1B/Pulse.git
 cd Pulse
 
-# Install dependencies
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# Launch desktop floating window
+# 3. Launch the desktop widget
 python app.py
 
 # Or launch in web browser mode
@@ -106,93 +101,108 @@ python app.py --browser
 
 ---
 
-## 🏗️ Building the Single-File Executable
+## 🔒 Security & Key Protection
 
-To compile `Pulse.exe` locally:
+Pulse is designed with zero-telemetry and local-first security principles:
+- **Windows DPAPI Encryption**: Your AgentRouter API key is encrypted using the Windows Data Protection API (`CryptProtectData` via `crypt32.dll`). The key is bound to your Windows user account; ciphertext cannot be decrypted by other user accounts or transferred to other machines.
+- **No Remote Telemetry**: Pulse connects only to `https://agentrouter.org` for diagnostics and `127.0.0.1` for local UI rendering. No external analytics, tracking, or logs.
+- **Masked Credentials**: Keys are masked across all UI views (`sk-••••••••1234`).
+- **Git-Safe**: `config.json` is explicitly gitignored.
 
-```powershell
-# Run the Python build automation
-python scripts/build_exe.py
-
-# Or execute the batch file
-.\scripts\build.bat
-```
-
-Output executable will be placed in `dist/Pulse.exe`.
+For full disclosure and vulnerability reporting, see [SECURITY.md](docs/SECURITY.md).
 
 ---
 
-## 🧪 Testing Suite
+## 🎯 Active Models Supported
 
-Pulse maintains 100% pass rates across unit and integration tests:
+Pulse focuses on currently active AgentRouter models:
 
-```powershell
-python -m unittest discover -s tests
-```
+| Model ID | Provider | Type | Behavior |
+|---|---|---|---|
+| `claude-opus-4-8` | Anthropic | Quota Pool | Refreshes at 07:30 & 16:30 IST |
+| `claude-opus-5` | Anthropic | Quota Pool | Refreshes at 07:30 & 16:30 IST |
+| `gpt-6-astra` | OpenAI | Quota Pool | Refreshes at 07:30 & 16:30 IST |
+| `deepseek-v4-flash` | DeepSeek | Uninterrupted | ⚡ Always active; zero quota lock |
 
-### Coverage:
-- `test_config_manager.py`: Key persistence, masking, concurrent thread safety.
-- `test_router_client.py`: Gateway health checks, HTTP 200/402/503/401 classification.
-- `test_time_service.py`: UTC release slot math, IST (UTC+05:30) conversions.
-- `test_server_endpoints.py`: REST endpoints, static file serving, color palette verification.
+Click the **Discover** button in Pulse anytime to probe `/v1/models` for newly activated models on your token.
 
 ---
 
-## 📁 Project Architecture
+## 🗺️ Product Roadmap: Availability-Aware AI Coding Automation
+
+Pulse is built as the availability engine for AI coding workflows:
+
+```text
+             PULSE
+               │
+        Availability Engine  (v1.0 — Current)
+               │
+        ┌──────┴──────┐
+        │             │
+   Claude Code      Codex
+        │             │
+        └──────┬──────┘
+               │
+          Task Queue         (Planned)
+               │
+          Scheduler          (Planned)
+```
+
+- **v1.0 (Current)**: Real-time availability monitor, HTTP 402 quota tracker, local countdowns, DPAPI security, and floating desktop widget.
+- **Future Releases**: Automated task queue that queues Claude Code and Codex prompts during quota dry spells and automatically executes them the second capacity refreshes.
+
+---
+
+## 📁 Repository Structure
 
 ```
 Pulse/
-├── src/                    # Application backend & client source modules
-│   ├── app.py              # Main desktop window launcher (pywebview)
-│   ├── server.py           # Local REST API & static asset server
-│   ├── router_client.py    # Diagnostic engine & model discovery
-│   ├── time_service.py     # Quota release schedule & timezone calculations
-│   └── config_manager.py   # Thread-safe settings & credential manager
+├── src/                    # Core Python application modules
+│   ├── app.py              # Desktop window launcher (WebView2)
+│   ├── server.py           # Local loopback server & API routes
+│   ├── router_client.py    # Gateway diagnostics & model discovery
+│   ├── time_service.py     # Quota schedule math & timezone calculations
+│   └── config_manager.py   # Windows DPAPI encryption & config persistence
 ├── static/                 # Frontend UI web application
-│   ├── index.html          # Widget UI structure & Help guide
-│   ├── style.css           # Commercial Dark FinTech design system
-│   ├── widget.js           # Frontend reactive controller & Web Audio
-│   ├── icon.png            # Webview branding asset
-│   └── icon.ico            # Webview favicon asset
-├── assets/                 # Brand assets & master icons
-│   ├── icon.png            # High-res master logo (PNG)
-│   └── icon.ico            # Multi-resolution Windows application icon (ICO)
-├── docs/                   # Commercial documentation & guides
-│   ├── USER_GUIDE.md       # Comprehensive user manual & troubleshooting
-│   ├── SECURITY.md         # Vulnerability reporting & token encryption policy
-│   ├── CONTRIBUTING.md     # Engineering standards & contribution workflow
+│   ├── index.html          # Widget markup & in-app help guide
+│   ├── style.css           # High-contrast dark theme
+│   ├── widget.js           # Reactive UI controller & Web Audio
+│   └── icon.png            # Webview asset
+├── assets/                 # Brand assets & preview media
+│   ├── icon.png            # High-resolution master icon (PNG)
+│   ├── icon.ico            # Multi-resolution Windows app icon (ICO)
+│   └── social_preview.png  # 1280x640 GitHub social preview card
+├── docs/                   # Guides & policy documentation
+│   ├── USER_GUIDE.md       # Complete user manual & troubleshooting
+│   ├── SECURITY.md         # Encryption architecture & security policy
+│   ├── CONTRIBUTING.md     # Setup instructions & developer guidelines
 │   └── CHANGELOG.md        # Version history & release notes
-├── scripts/                # Packaging & build automation
-│   ├── build_exe.py        # PyInstaller standalone executable builder
-│   ├── build.bat           # 1-click executable compile script
-│   └── file_version_info.txt # Windows PE VersionInfo resource definition
-├── tests/                  # Automated test suite (43/43 passing)
-│   ├── test_config_manager.py
-│   ├── test_router_client.py
-│   ├── test_server_endpoints.py
-│   └── test_time_service.py
-├── dist/                   # Compiled standalone binaries
-│   └── Pulse.exe           # 🚀 Standalone single-file Windows executable (no terminal)
-├── app.py                  # Root entry point launcher
-├── run_widget.bat          # 1-click Python source launcher
-├── config.example.json     # Git-safe configuration template
+├── scripts/                # Build & release automation
+│   ├── build_exe.py        # PyInstaller standalone build script
+│   ├── build.bat           # 1-click Windows build batch file
+│   ├── generate_social_preview.py # Social card generator
+│   └── publish_release.py  # GitHub Release publishing automation
+├── tests/                  # Automated test suite (46/46 passing)
+├── app.py                  # Root launcher entrypoint
 ├── requirements.txt        # Python package dependencies
-├── .gitignore              # Git ignore rules
-└── LICENSE                 # Commercial-friendly MIT License
+└── LICENSE                 # MIT License
 ```
 
 ---
 
-## 📚 Commercial Documentation
+## 🧪 Testing
 
-- [User Guide & Troubleshooting Manual](docs/USER_GUIDE.md)
-- [Security Policy & Disclosures](docs/SECURITY.md)
-- [Contributing Guidelines](docs/CONTRIBUTING.md)
-- [Release Changelog](docs/CHANGELOG.md)
-- [License](LICENSE)
+Pulse maintains 100% test pass rates across all modules:
+
+```powershell
+python -m unittest discover tests
+```
+
+Tests cover DPAPI encryption/decryption, legacy config migration, gateway status classification (200, 401, 402, 503, offline), UTC/IST quota release math, and local REST endpoints.
 
 ---
 
 ## 📄 License
-This project is licensed under the [MIT License](LICENSE).
-Target Service: **[AgentRouter](https://agentrouter.org/)**.
+
+Distributed under the [MIT License](LICENSE).  
+Target Gateway: **[AgentRouter](https://agentrouter.org)**.

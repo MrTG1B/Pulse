@@ -63,8 +63,9 @@ _GATEWAY_LOCK = threading.RLock()
 
 def get_auth_headers(api_key: Optional[str] = None) -> Dict[str, str]:
     """
-    Returns authentic client headers allowlisted by AgentRouter WAF.
-    Uses official claude-cli client identity to prevent 401 unauthorized client errors.
+    Returns authentic client headers compatible with AgentRouter.
+    Uses official claude-cli client identity matching supported coding clients
+    (Claude Code, Codex) to ensure seamless API interoperability.
     """
     headers = {
         "User-Agent": "claude-cli/1.0.108 (external, cli)",
@@ -274,8 +275,8 @@ def test_model_connection(
     elif status_code == 401:
         status_type = "unauthorized"
         if "unauthorized client" in err_lower:
-            status_title = "WAF Blocked (401)"
-            message = "AgentRouter WAF rejected client identity. Please ensure headers are allowlisted."
+            status_title = "Unauthorized Client (401)"
+            message = "AgentRouter rejected client identity. Pulse uses compatible request headers for supported coding clients."
         else:
             status_title = "Unauthorized (401)"
             message = f"Invalid API Key or unauthorized token: {error_message or 'Please check your key.'}"

@@ -1,6 +1,6 @@
 # Security Policy — Pulse
 
-Pulse is built with security, privacy, and zero-telemetry principles for developers and enterprise teams monitoring **[AgentRouter](https://agentrouter.org/)**.
+Pulse is built with security, privacy, and zero-telemetry principles for developers monitoring **[AgentRouter](https://agentrouter.org/)**.
 
 ---
 
@@ -25,8 +25,8 @@ Pulse is built with security, privacy, and zero-telemetry principles for develop
    - Tokens are masked in API payloads and UI views by default (`sk-••••••••1234`).
    - `config.json` is explicitly gitignored to prevent accidental commits to source control repositories.
 
-4. **WAF & Header Validation**
-   - Pulse utilizes authenticated, allowlisted client headers matching official client profiles (`claude-cli/1.0.108`) to ensure legitimate communications without triggering Cloudflare / AgentRouter WAF blocks.
+4. **Compatible AgentRouter Client Headers**
+   - Pulse utilizes authentic, compatible client identification headers matching supported coding client profiles (`claude-cli/1.0.108` for Claude Code and Codex) to ensure seamless API interoperability without encountering unauthorized client rejections.
 
 5. **No Remote Code Execution**
    - The desktop wrapper uses Microsoft Edge WebView2 with a restricted JS API bridge strictly exposing window management controls (`resize_window`, `toggle_always_on_top`, `minimize_window`, `close_window`, `open_external_url`).

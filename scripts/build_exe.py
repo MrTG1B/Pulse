@@ -1,6 +1,6 @@
 """
 Pulse — Single-File Executable Builder.
-Compiles Pulse into a standalone, commercial-grade Windows .exe with no console window.
+Compiles Pulse into a standalone Windows .exe with no console window.
 Embeds static assets (HTML/CSS/JS/icons) and config templates using PyInstaller.
 """
 

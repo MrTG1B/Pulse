@@ -1,4 +1,4 @@
-# Pulse — Commercial User Guide & Manual
+# Pulse — User Guide & Manual
 
 **Pulse** is a lightweight, high-performance, always-on-top desktop monitor and diagnostics widget designed specifically for developers using **[AgentRouter](https://agentrouter.org/)**.
 
@@ -146,7 +146,7 @@ AgentRouter classifies models into two operational categories:
 | **200 OK** | 🟢 **Available / Active** | The model is operational and quota is available. | You can safely make API requests. |
 | **402** | 🔴 **Quota Exhausted** | The daily budget pool for Claude/GPT has been depleted. | Check the countdown for the next batch, or click **Switch to DeepSeek V4 Flash**. |
 | **503** | 🔴 **No Channel** | The requested model is not available in your token's current channel pool (e.g. core). | Click **Discover** or select an active model like `deepseek-v4-flash`. |
-| **401** | 🔴 **Unauthorized** | Invalid API key or client identity blocked by WAF. | Check your API key in Settings. Pulse automatically uses allowlisted headers. |
+| **401** | 🔴 **Unauthorized** | Invalid API key or unauthorized client identity. | Check your API key in Settings. Pulse automatically uses compatible headers for Claude Code and Codex. |
 | **429** | 🔴 **Rate Limited** | Too many requests within a short timeframe. | Wait 10-30 seconds before retrying. |
 | **0** | ⚪ **Offline** | Cannot reach `https://agentrouter.org` or local network failure. | Check your internet connection. |
 

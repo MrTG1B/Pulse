@@ -1,6 +1,6 @@
 # Contributing to Pulse
 
-Thank you for your interest in contributing to **Pulse**! Pulse is a high-performance, commercial-grade floating desktop widget and quota monitor for **[AgentRouter](https://agentrouter.org/)**.
+Thank you for your interest in contributing to **Pulse**! Pulse is an always-on-top availability monitor and task scheduler for developers using **[AgentRouter](https://agentrouter.org/)** with Claude Code and Codex.
 
 ---
 

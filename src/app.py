@@ -114,7 +114,7 @@ def start_server_thread(port: int):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Pulse — Commercial Floating Monitor Widget")
+    parser = argparse.ArgumentParser(description="Pulse — Floating Availability Monitor Widget")
     parser.add_argument("--browser", action="store_true", help="Launch in default web browser instead of desktop window")
     parser.add_argument("--port", type=int, default=8765, help="Port for local widget server")
     args = parser.parse_args()

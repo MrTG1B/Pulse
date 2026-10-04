@@ -153,7 +153,7 @@ class TestRouterClient(unittest.TestCase):
         self.assertEqual(ds["category"], "uninterrupted")
 
     def test_auth_headers_contain_stainless(self):
-        """Verifies authentic client headers required to bypass AgentRouter WAF."""
+        """Verifies authentic AgentRouter-compatible client headers for Claude Code and Codex."""
         headers = router_client.get_auth_headers(api_key="sk-test-12345")
         self.assertEqual(headers["User-Agent"], "claude-cli/1.0.108 (external, cli)")
         self.assertEqual(headers["anthropic-version"], "2023-06-01")

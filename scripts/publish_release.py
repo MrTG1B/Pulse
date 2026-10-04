@@ -14,7 +14,7 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXE_PATH = os.path.join(ROOT_DIR, "dist", "Pulse.exe")
 REPO = "MrTG1B/Pulse"
 TAG_NAME = "v1.0.0"
-RELEASE_TITLE = "Pulse v1.0.0 — Commercial Standalone Release"
+RELEASE_TITLE = "Pulse v1.0.0 — Standalone Release for Windows"
 
 
 def get_github_token() -> str:
@@ -51,9 +51,9 @@ def compute_sha256(filepath: str) -> str:
 
 
 def get_release_notes(sha256: str, size_mb: float) -> str:
-    return f"""## Pulse v1.0.0 — Standalone Commercial Desktop Release
+    return f"""## Pulse v1.0.0 — Standalone Desktop Release for Windows
 
-**Pulse** is a commercial-grade, always-on-top desktop widget and real-time connection diagnostic monitor for [AgentRouter.org](https://agentrouter.org).
+**Pulse** is a lightweight, always-on-top availability monitor and quota tracker for developers using [AgentRouter](https://agentrouter.org) with Claude Code and Codex.
 
 ### 🚀 What's New in v1.0.0
 

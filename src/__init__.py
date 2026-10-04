@@ -1,5 +1,5 @@
 """
-Pulse — Commercial Real-Time Gateway Monitor & Quota Scheduler.
+Pulse — Real-Time Gateway Availability Monitor & Quota Scheduler.
 """
 
 __version__ = "1.0.0"
