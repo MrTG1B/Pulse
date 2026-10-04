@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pulse</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="theme-dark">
+  <div class="widget-container" id="widgetContainer">
+    
+    <!-- Top Drag / Title Bar -->
+    <header class="titlebar pywebview-drag-region" id="titleBar">
+      <div class="brand">
+        <div class="pulse-dot" id="headerPulseDot"></div>
+        <span class="brand-name">Pulse</span>
+      </div>
+
+      <div class="window-controls no-drag">
+        <button class="icon-btn" id="btnPin" title="Always on Top (Toggle Pin)">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 17v5M9 2h6l-1 5h3l-3 7H9l-3-7h3L8 2z"/></svg>
+        </button>
+        <button class="icon-btn" id="btnCompact" title="Toggle Compact Mode">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
+        </button>
+        <button class="icon-btn" id="btnSettings" title="API Key & Settings">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <button class="icon-btn close-btn" id="btnClose" title="Close / Hide">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Compact Floating Bar View (When Compact Mode Active) -->
+    <div class="compact-view" id="compactView">
+      <div class="compact-left">
+        <span class="status-indicator-dot" id="compactStatusDot"></span>
+        <span class="compact-status-text" id="compactStatusText">Checking...</span>
+      </div>
+      <div class="compact-center" id="compactCenter" title="Click to view local release time">
+        <span class="compact-countdown-label">Next:</span>
+        <span class="compact-countdown-val" id="compactCountdown">--:--:--</span>
+        <span class="compact-local-val" id="compactLocalTime">(--:-- IST)</span>
+      </div>
+      <div class="compact-right">
+        <span class="compact-latency" id="compactLatency">-- ms</span>
+        <button class="mini-btn" id="btnCompactRefresh" title="Quick Refresh">↻</button>
+        <button class="mini-btn" id="btnCompactExpand" title="Expand Full View">⤢</button>
+      </div>
+    </div>
+
+    <!-- Main Expanded Widget Body -->
+    <main class="main-content" id="mainContent">
+
+      <!-- API Key Quick Bar / Prompt -->
+      <section class="api-key-strip" id="apiKeyStrip">
+        <div class="key-strip-left">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" class="key-icon"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+          <span class="key-label">API KEY:</span>
+          <span class="key-val" id="keyDisplayValue">Not Set</span>
+        </div>
+        <div class="key-strip-actions">
+          <button class="text-action-btn" id="btnEditKey">Edit</button>
+          <button class="text-action-btn" id="btnToggleKeyMask" title="Show/Hide Key">Show</button>
+        </div>
+      </section>
+
+      <!-- Key Input Drawer (Expands when editing or if key not set) -->
+      <section class="key-drawer" id="keyDrawer" style="display: none;">
+        <div class="drawer-header">
+          <span>AgentRouter API Key Setup & Edit</span>
+          <button class="drawer-close" id="btnCloseKeyDrawer">✕</button>
+        </div>
+        <div class="key-input-wrapper">
+          <div class="input-with-eye">
+            <input type="password" id="inputApiKey" placeholder="Paste or edit API key (sk-...)" autocomplete="off" spellcheck="false">
+            <button class="eye-toggle-btn" id="btnInputEye" type="button" title="Show/Hide text">👁️</button>
+          </div>
+          <button class="btn-primary" id="btnSaveKey">Save Key</button>
+        </div>
+        <div class="key-drawer-links">
+          <a href="https://ps.air-outer.com/console/token" target="_blank" class="helper-link" title="Open Token Console">
+            🔗 Get API Key from Console
+          </a>
+          <button class="text-secondary-btn" id="btnCancelEditKey">Cancel</button>
+          <button class="text-danger-btn" id="btnClearKey">Clear Key</button>
+        </div>
+      </section>
+
+      <!-- Primary Connection Status Card -->
+      <section class="status-card" id="statusCard">
+        <div class="status-top">
+          <div class="status-badge" id="statusBadge">
+            <span class="badge-dot" id="badgeDot"></span>
+            <span class="badge-title" id="badgeTitle">CHECKING CONNECTION</span>
+          </div>
+          <div class="latency-badge" id="latencyBadge">
+            <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span id="latencyText">-- ms</span>
+          </div>
+        </div>
+
+        <p class="status-message" id="statusMessage">Connecting to AgentRouter gateway...</p>
+
+        <!-- Quota Alert Banner (Displays prominent guidance when 402 happens) -->
+        <div class="quota-exhausted-banner" id="quotaExhaustedBanner" style="display: none;">
+          <div class="banner-header">
+            <span class="banner-icon">⚠️</span>
+            <strong>Claude / GPT Budget Pool Exhausted (HTTP 402)</strong>
+          </div>
+          <div class="banner-timer-box">
+            <span class="banner-timer-label">Quota Replenishment:</span>
+            <strong class="banner-timer-countdown" id="bannerCountdown">00h 00m 00s</strong>
+            <span class="banner-timer-at" id="bannerLocalTarget">at 07:30 AM (IST)</span>
+          </div>
+          <p class="banner-desc">
+            Daily quota has run out. Next release batch will arrive in your local time above. You can switch to uninterrupted models anytime.
+          </p>
+          <div class="banner-action-row">
+            <button class="btn-switch-model" id="btnSwitchDeepSeek">
+              ⚡ Switch to DeepSeek V4 Flash (Active)
+            </button>
+            <button class="btn-switch-model btn-switch-glm" id="btnSwitchGlm">
+              ⚡ Switch to GLM-4 Plus
+            </button>
+          </div>
+        </div>
+
+        <!-- No Channel (HTTP 503) Alert Banner -->
+        <div class="quota-exhausted-banner no-channel-banner" id="noChannelBanner" style="display: none;">
+          <div class="banner-header">
+            <span class="banner-icon">⚠️</span>
+            <strong>No Channel for Selected Model (HTTP 503)</strong>
+          </div>
+          <p class="banner-desc">
+            This model is not available in your token's current channel pool (core). Switch to the verified active model or auto-discover available channels.
+          </p>
+          <div class="banner-action-row">
+            <button class="btn-switch-model" id="btnSwitchFlash">
+              ⚡ Switch to DeepSeek V4 Flash (Active 200 OK)
+            </button>
+            <button class="btn-switch-model btn-switch-glm" id="btnBannerDiscover">
+              🔍 Discover Channel Models
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Countdown & Local Time Schedule Card (Core Requirement) -->
+      <section class="countdown-card" id="countdownCard">
+        <div class="countdown-header">
+          <div class="countdown-title">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>NEXT QUOTA RELEASE</span>
+          </div>
+          <span class="batch-pill" id="batchPill">Batch 1</span>
+        </div>
+
+        <!-- Big Countdown Clock -->
+        <div class="countdown-timer">
+          <div class="time-block">
+            <span class="digits" id="cntHours">00</span>
+            <span class="unit">HOURS</span>
+          </div>
+          <span class="time-separator">:</span>
+          <div class="time-block">
+            <span class="digits" id="cntMinutes">00</span>
+            <span class="unit">MINS</span>
+          </div>
+          <span class="time-separator">:</span>
+          <div class="time-block">
+            <span class="digits" id="cntSeconds">00</span>
+            <span class="unit">SECS</span>
+          </div>
+        </div>
+
+        <!-- Cycle Progress Bar -->
+        <div class="cycle-progress-container" title="Release cycle progress">
+          <div class="cycle-progress-bar" id="cycleProgressBar" style="width: 0%;"></div>
+        </div>
+
+        <!-- Exact Local Time Notice (User's context UTC+05:30) -->
+        <div class="local-time-notice">
+          <div class="local-time-main">
+            <span class="label">When in My Local Time:</span>
+            <span class="value" id="localTimeDisplay">Calculating...</span>
+          </div>
+          <div class="ref-time-sub">
+            <span id="beijingRefTime">Beijing: 10:00 / 19:00 CST</span>
+            <span class="dot-divider">•</span>
+            <span id="utcRefTime">02:00 / 11:00 UTC</span>
+          </div>
+        </div>
+
+        <!-- Daily Release Schedule Information Accordion -->
+        <div class="schedule-info-row">
+          <span class="schedule-tag">📅 Daily Drops:</span>
+          <span class="schedule-times" id="dailyScheduleTimes">07:30 AM & 04:30 PM (IST)</span>
+        </div>
+      </section>
+
+      <!-- Model Selector Dropdown & Diagnostics -->
+      <section class="model-control-card">
+        <div class="section-label-row">
+          <label for="modelSelect">Target Model to Test:</label>
+          <span class="models-count" id="modelsCount">18 models</span>
+        </div>
+
+        <div class="select-wrapper">
+          <select id="modelSelect" class="model-dropdown">
+            <!-- Populated dynamically via JS -->
+            <optgroup label="Claude Family (Quota Pool: 10:00 & 19:00)">
+              <option value="claude-3-5-sonnet-20241022" selected>Claude 3.5 Sonnet</option>
+              <option value="claude-3-7-sonnet-20250219-thinking">Claude 3.7 Sonnet (Thinking)</option>
+              <option value="claude-opus-5">Claude Opus 5</option>
+              <option value="claude-opus-4-8">Claude Opus 4.8</option>
+              <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+              <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+            </optgroup>
+            <optgroup label="OpenAI Family (Quota Pool: 10:00 & 19:00)">
+              <option value="gpt-4o">GPT-4o</option>
+              <option value="gpt-4o-mini">GPT-4o Mini</option>
+              <option value="gpt-5.6-sol">GPT-5.6 Sol</option>
+              <option value="gpt-6-astra">GPT-6 Astra</option>
+              <option value="o1-mini">OpenAI o1-mini</option>
+            </optgroup>
+            <optgroup label="⚡ Uninterrupted Family (Always Active - No Pool Lock)">
+              <option value="deepseek-chat">⚡ DeepSeek V3 (Chat)</option>
+              <option value="deepseek-reasoner">⚡ DeepSeek R1 (Reasoner)</option>
+              <option value="deepseek-v4-flash">⚡ DeepSeek V4 Flash</option>
+              <option value="glm-4-plus">⚡ GLM-4 Plus</option>
+              <option value="glm-5.3">⚡ GLM-5.3</option>
+              <option value="glm-4-flash">⚡ GLM-4 Flash</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons-row">
+          <button class="btn-action primary-action" id="btnTestConnection">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" class="spin-icon" id="spinnerIcon"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            <span id="testBtnText">Test Connection</span>
+          </button>
+          <button class="btn-action secondary-action" id="btnTestAllModels" title="Batch test Claude, GPT, and DeepSeek">
+            Test All
+          </button>
+          <button class="btn-action secondary-action" id="btnDiscoverModels" title="Discover live models from AgentRouter API">
+            Discover
+          </button>
+        </div>
+      </section>
+
+      <!-- Auto-refresh & Settings Controls Strip -->
+      <section class="controls-strip">
+        <div class="control-item">
+          <label class="switch-toggle" title="Enable/Disable Automatic Connection Polling">
+            <input type="checkbox" id="chkAutoRefresh" checked>
+            <span class="slider round"></span>
+          </label>
+          <span class="control-label">Auto-check</span>
+        </div>
+
+        <div class="control-item">
+          <select id="selInterval" class="mini-select" title="Polling Interval">
+            <option value="15">15s</option>
+            <option value="30" selected>30s</option>
+            <option value="60">1m</option>
+            <option value="120">2m</option>
+            <option value="300">5m</option>
+          </select>
+        </div>
+
+        <div class="control-item">
+          <button class="sound-toggle-btn" id="btnSoundToggle" title="Audio chime when release drops or recovers">
+            <span id="soundIcon">🔔</span>
+          </button>
+        </div>
+
+        <div class="control-item last-checked">
+          <span class="last-checked-label" id="lastCheckedTime">Just now</span>
+        </div>
+      </section>
+
+      <!-- Live Models Health Table / Drawer (Collapsible) -->
+      <details class="models-overview-details" id="modelsOverview">
+        <summary class="overview-summary">
+          <span>Model Quota Status Overview</span>
+          <span class="summary-caret">▼</span>
+        </summary>
+        <div class="models-overview-content" id="modelsOverviewList">
+          <!-- Populated dynamically via JS -->
+          <div class="overview-loading">Loading models...</div>
+        </div>
+      </details>
+
+      <!-- Announcement / Official Site Notice Accordion -->
+      <details class="notice-details">
+        <summary class="notice-summary">
+          <span>Official AgentRouter Quota Policy</span>
+          <span class="summary-caret">▼</span>
+        </summary>
+        <div class="notice-content">
+          <p class="notice-quote">
+            "为保障服务稳定，8月27日起 Claude / GPT 改为每日限量供应，新的投放时间为🕙北京时间10:00和19:00（对应UTC时间02:00和11:00），请大家注意时间变更，避免跑空。🕙 额度用尽后会报错 402 Budget pool quota has been exhausted，等下一批次即可；也可随时切换 DeepSeek / GLM 正常使用。"
+          </p>
+          <p class="notice-en">
+            "Claude / GPT are limited to daily quotas released at 10:00 AM & 7:00 PM Beijing Time (02:00 & 11:00 UTC = 07:30 AM & 04:30 PM IST). 402 Budget pool exhausted indicates waiting for next batch; DeepSeek / GLM remain uninterrupted."
+          </p>
+        </div>
+      </details>
+
+    </main>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal" style="display: none;">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Settings & Preferences</h3>
+          <button class="modal-close" id="btnCloseSettingsModal">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="settingApiKey">AgentRouter API Key</label>
+            <div class="input-with-action">
+              <input type="password" id="settingApiKey" placeholder="sk-...">
+              <button class="btn-inline" id="btnModalSaveKey">Save</button>
+            </div>
+            <small class="form-hint">Stored locally in config.json. Never shared.</small>
+          </div>
+
+          <div class="form-group">
+            <label for="settingBaseUrl">Gateway Endpoint</label>
+            <select id="settingBaseUrl" class="form-select">
+              <option value="https://agentrouter.org" selected>https://agentrouter.org (Primary)</option>
+              <option value="https://ps.air-outer.com">https://ps.air-outer.com (Official Backup)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="settingTimezone">Timezone Display</label>
+            <select id="settingTimezone" class="form-select">
+              <option value="330" selected>India Standard Time (IST, UTC+05:30) - Default</option>
+              <option value="480">Beijing Time (CST, UTC+08:00)</option>
+              <option value="0">Universal Time (UTC+00:00)</option>
+              <option value="auto">Auto-detect from System Browser</option>
+            </select>
+          </div>
+
+          <div class="form-group checkbox-row">
+            <label class="checkbox-label">
+              <input type="checkbox" id="settingAlwaysOnTop" checked>
+              Always Keep Widget On Top (Desktop Floating)
+            </label>
+          </div>
+
+          <div class="form-group checkbox-row">
+            <label class="checkbox-label">
+              <input type="checkbox" id="settingChime" checked>
+              Play Sound Chime on Quota Release (00:00:00)
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="btnModalClose">Done</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="widget.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "api_key": "",
+  "base_url": "https://agentrouter.org",
+  "selected_model": "deepseek-v4-flash",
+  "refresh_interval_sec": 30,
+  "auto_refresh_enabled": true,
+  "always_on_top": true,
+  "compact_mode": false,
+  "sound_alert_enabled": true,
+  "user_timezone_offset": 330
+}
