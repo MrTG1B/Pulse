@@ -1,10 +1,14 @@
 # Pulse
 
-[![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20(64--bit)-0078D6?style=flat-square&logo=windows)](https://github.com/MrTG1B/Pulse)
+[![Latest Release](https://img.shields.io/github/v/release/MrTG1B/Pulse?style=flat-square&color=B8FF3D&label=Latest%20Release)](https://github.com/MrTG1B/Pulse/releases/latest)
+[![Download Pulse.exe](https://img.shields.io/badge/Download-Pulse.exe%20(v1.0.0)-B8FF3D?style=flat-square&logo=windows&logoColor=0A0A0A&labelColor=111111)](https://github.com/MrTG1B/Pulse/releases/download/v1.0.0/Pulse.exe)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20(64--bit)-0078D6?style=flat-square&logo=windows)](https://github.com/MrTG1B/Pulse/releases/latest)
 [![Target Service](https://img.shields.io/badge/target%20service-agentrouter.org-B8FF3D?style=flat-square&labelColor=111111)](https://agentrouter.org)
-[![Executable](https://img.shields.io/badge/distribution-Single--File%20.exe%20(No%20Terminal)-success?style=flat-square)](https://github.com/MrTG1B/Pulse)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-43%2F43%20passed-brightgreen?style=flat-square)](tests)
+
+> ### ⚡ Quick Download
+> 📦 **[Download Standalone Pulse.exe (v1.0.0)](https://github.com/MrTG1B/Pulse/releases/download/v1.0.0/Pulse.exe)** (31.5 MB) — Zero installation or Python required. Runs out of the box with no terminal window.
 
 **Pulse** is a lightweight, high-performance, commercial-grade floating desktop monitor and telemetry widget designed specifically for **[AgentRouter](https://agentrouter.org/)**.
 
