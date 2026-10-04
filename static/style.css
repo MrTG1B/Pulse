@@ -155,6 +155,22 @@ body {
   gap: 8px;
 }
 
+.brand-logo {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: contain;
+  display: block;
+}
+
+.compact-logo {
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  object-fit: contain;
+  margin-right: 4px;
+}
+
 .pulse-dot {
   width: 8px;
   height: 8px;

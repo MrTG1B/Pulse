@@ -124,6 +124,8 @@ class AgentRouterRequestHandler(BaseHTTPRequestHandler):
         # Static File Routes
         if path in ("/", "/index.html"):
             file_path = os.path.join(STATIC_DIR, "index.html")
+        elif path == "/favicon.ico":
+            file_path = os.path.join(STATIC_DIR, "icon.png")
         else:
             rel_path = path.lstrip("/").replace("/", os.sep)
             file_path = os.path.join(STATIC_DIR, rel_path)
