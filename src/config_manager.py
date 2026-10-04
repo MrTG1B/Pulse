@@ -58,14 +58,16 @@ def encrypt_secret(plaintext: str) -> str:
         except Exception:
             pass
 
-    # Fallback for non-Windows (e.g. Linux automated test runners)
-    return "enc:b64:" + base64.b64encode(plaintext.encode("utf-8")).decode("ascii")
+    # Non-Windows test environments (e.g. Linux CI test runners) use reversible Base64 encoding.
+    # NOTE: Non-Windows test environments use reversible encoding only and should not be considered
+    # secure credential storage. Production Windows builds exclusively utilize Windows DPAPI.
+    return "dev:b64:" + base64.b64encode(plaintext.encode("utf-8")).decode("ascii")
 
 
 def decrypt_secret(ciphertext: str) -> str:
     """
     Decrypts a ciphertext string encrypted by encrypt_secret.
-    Uses Windows DPAPI CryptUnprotectData on Windows, or decodes base64 fallback.
+    Uses Windows DPAPI CryptUnprotectData on Windows, or decodes development fallback.
     """
     ciphertext = (ciphertext or "").strip()
     if not ciphertext:
@@ -87,9 +89,10 @@ def decrypt_secret(ciphertext: str) -> str:
         except Exception:
             return ""
 
-    elif ciphertext.startswith("enc:b64:"):
+    elif ciphertext.startswith("dev:b64:") or ciphertext.startswith("enc:b64:"):
+        prefix_len = len("dev:b64:") if ciphertext.startswith("dev:b64:") else len("enc:b64:")
         try:
-            raw_b64 = ciphertext[len("enc:b64:"):]
+            raw_b64 = ciphertext[prefix_len:]
             return base64.b64decode(raw_b64).decode("utf-8")
         except Exception:
             return ""

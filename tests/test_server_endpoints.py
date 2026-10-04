@@ -115,6 +115,7 @@ class TestServerEndpoints(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertTrue(data["has_api_key"])
+        self.assertNotIn("api_key", data)
         self.assertIn("••••••••", data["masked_api_key"])
 
         # Clear key
@@ -124,19 +125,20 @@ class TestServerEndpoints(unittest.TestCase):
         self.assertEqual(resp_clear.status_code, 200)
         data_clear = resp_clear.json()
         self.assertFalse(data_clear["has_api_key"])
+        self.assertNotIn("api_key", data_clear)
 
-    def test_api_config_key_get_endpoint(self):
+    def test_api_config_key_get_endpoint_does_not_expose_raw_key(self):
         # Save key first
         requests.post(f"{self.base_url}/api/config/key", json={
             "api_key": "sk-reveal-test-key-5555",
             "action": "save"
         })
-        # Fetch raw key via GET
+        # Fetch key metadata via GET — verify raw api_key is NEVER returned
         resp = requests.get(f"{self.base_url}/api/config/key")
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertTrue(data["has_api_key"])
-        self.assertEqual(data["api_key"], "sk-reveal-test-key-5555")
+        self.assertNotIn("api_key", data)
         self.assertIn("••••••••", data["masked_api_key"])
 
         # Clean up

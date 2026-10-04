@@ -16,13 +16,13 @@ Pulse is built with security, privacy, and zero-telemetry principles for develop
      - Target gateway: `https://agentrouter.org` (or configured backup `https://ps.air-outer.com`).
      - Local loopback: `http://127.0.0.1:[port]`.
 
-3. **Hardware-Backed Local API Key Encryption (Windows DPAPI)**
-   - API tokens are encrypted at rest using the **Windows Data Protection API (DPAPI)** (`CryptProtectData` via Windows `crypt32.dll`).
-   - Encryption keys are derived by the Windows Local Security Authority Subsystem Service (LSASS) from the logged-in user's Windows security credentials and hardware TPM (if present).
+3. **Windows DPAPI Local Key Encryption**
+   - **Windows DPAPI**: Pulse encrypts AgentRouter API keys at rest using the Windows Data Protection API (`CryptProtectData` via Windows `crypt32.dll`). The encrypted value is bound to the Windows user context and is not stored as plaintext.
    - In `config.json` (or `%APPDATA%/Pulse/config.json`), keys are stored strictly as an opaque encrypted ciphertext blob prefixed with `enc:dpapi:`. Plaintext keys are **never written to disk**.
-   - **Cross-Account & Cross-Device Protection**: No other Windows user account on the same machine, and no unauthorized process on another computer, can decrypt the stored ciphertext—even if `config.json` is copied, inspected, or exfiltrated.
+   - **User Context Isolation**: Because encryption is bound to the logged-in user's Windows credentials, copying or exfiltrating `config.json` to another machine or accessing it from another user account on the same machine cannot decrypt the secret.
    - **Automatic Legacy Migration**: If a legacy plaintext `config.json` is detected on startup, Pulse automatically encrypts it with DPAPI and immediately overwrites and purges the plaintext key from disk.
-   - Tokens are masked in API payloads and UI views by default (`sk-••••••••1234`).
+   - **Local API Security**: The local backend API never exposes raw keys over HTTP (only `has_api_key` and masked strings `sk-••••••••1234`).
+   - **Non-Windows Environments**: Non-Windows test environments (e.g. cross-platform CI runners) use reversible encoding (`dev:b64:`) exclusively for testing and should not be considered secure credential storage. Production Windows builds exclusively utilize Windows DPAPI.
    - `config.json` is explicitly gitignored to prevent accidental commits to source control repositories.
 
 4. **Compatible AgentRouter Client Headers**

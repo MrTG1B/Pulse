@@ -37,15 +37,15 @@ Pulse watches model availability, quota replenishment windows, and gateway conne
 
 When you're building with **Claude Code**, **Codex**, or AgentRouter API tokens, shared budget pools run dry during peak hours. Manually sending test prompts or refreshing status dashboards wastes time and disrupts your coding flow.
 
-Pulse runs as a lightweight, always-on-top desktop widget that sits alongside your IDE or terminal. It continuously tracks model health, calculates the exact countdown to the next quota drop in your local timezone, and alerts you the moment capacity is restored.
+Pulse runs as a lightweight, always-on-top desktop widget that sits alongside your IDE or terminal. It monitors AgentRouter availability in the background at a configurable polling interval, calculates the exact countdown to the next quota drop in your local timezone, and alerts you the moment capacity is restored.
 
 ### Features
-- **AgentRouter Availability Monitoring**: Real-time HTTP health and latency tracking directly against `agentrouter.org`.
+- **AgentRouter Availability Polling**: Background health and latency benchmarks at configurable intervals directly against `agentrouter.org`.
 - **HTTP 402 Quota Detection**: Instantly recognizes budget pool exhaustion and provides 1-click fallback to uninterrupted models.
 - **Local Timezone Countdown**: Precision countdown tickers to official drop batches (`07:30 AM` and `04:30 PM IST` / `02:00` and `11:00 UTC`).
 - **Compatible AgentRouter Client Headers**: Uses authentic client identification profiles (`claude-cli/1.0.108`) to ensure seamless interoperability for Claude Code and Codex workflows.
 - **Dynamic Model Discovery**: Auto-detects all available models on your account token with live response time benchmarks.
-- **Hardware-Backed Key Encryption**: Protects API keys at rest using **Windows DPAPI** (`CryptProtectData`). Plaintext keys are never stored on disk.
+- **Windows DPAPI Local Key Encryption**: Pulse encrypts AgentRouter API keys at rest using Windows Data Protection API (`CryptProtectData`). The encrypted value is bound to the Windows user context and is not stored as plaintext.
 - **Always-on-Top Floating Widget**: Sleek, distraction-free desktop window with a 1-click compact mini-dock mode.
 
 ---
@@ -104,7 +104,8 @@ python app.py --browser
 ## 🔒 Security & Key Protection
 
 Pulse is designed with zero-telemetry and local-first security principles:
-- **Windows DPAPI Encryption**: Your AgentRouter API key is encrypted using the Windows Data Protection API (`CryptProtectData` via `crypt32.dll`). The key is bound to your Windows user account; ciphertext cannot be decrypted by other user accounts or transferred to other machines.
+- **Windows DPAPI Encryption**: Pulse encrypts AgentRouter API keys at rest using the Windows Data Protection API (`CryptProtectData` via `crypt32.dll`). The encrypted value is bound to the Windows user context and is not stored as plaintext.
+- **No Key Exposure Over Local API**: Local HTTP endpoints never return raw API keys over the network (only `has_api_key` and masked strings).
 - **No Remote Telemetry**: Pulse connects only to `https://agentrouter.org` for diagnostics and `127.0.0.1` for local UI rendering. No external analytics, tracking, or logs.
 - **Masked Credentials**: Keys are masked across all UI views (`sk-••••••••1234`).
 - **Git-Safe**: `config.json` is explicitly gitignored.

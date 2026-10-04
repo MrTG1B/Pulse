@@ -102,7 +102,7 @@ python app.py --browser
 4. Paste your key and click **Save Key**.
 5. Pulse validates the key locally and immediately performs an operational probe.
 
-> **Security & Encryption:** Your API key is encrypted at rest using the **Windows Data Protection API (DPAPI)** (`CryptProtectData`). The encryption key is tied to your Windows user account; plaintext keys are **never stored on disk**. It is never sent to any remote server other than direct HTTPS diagnostic requests to `https://agentrouter.org`.
+> **Security & Encryption:** Pulse encrypts AgentRouter API keys at rest using the **Windows Data Protection API (DPAPI)** (`CryptProtectData`). The encrypted value is bound to the Windows user context and is not stored as plaintext. The local API never exposes raw keys over HTTP, and keys are never transmitted to any third-party service.
 
 ---
 

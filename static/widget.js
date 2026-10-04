@@ -79,14 +79,8 @@
     latencyBadge: document.getElementById('latencyBadge'),
     latencyText: document.getElementById('latencyText'),
     statusMessage: document.getElementById('statusMessage'),
-    quotaExhaustedBanner: document.getElementById('quotaExhaustedBanner'),
-    noChannelBanner: document.getElementById('noChannelBanner'),
-    bannerCountdown: document.getElementById('bannerCountdown'),
-    bannerLocalTarget: document.getElementById('bannerLocalTarget'),
+    statusActionRow: document.getElementById('statusActionRow'),
     btnSwitchDeepSeek: document.getElementById('btnSwitchDeepSeek'),
-    btnSwitchGlm: document.getElementById('btnSwitchGlm'),
-    btnSwitchFlash: document.getElementById('btnSwitchFlash'),
-    btnBannerDiscover: document.getElementById('btnBannerDiscover'),
 
     // Countdown Card
     batchPill: document.getElementById('batchPill'),
@@ -215,28 +209,12 @@
 
     // Model Change
     el.modelSelect.addEventListener('change', onModelSelected);
-    el.btnSwitchDeepSeek.addEventListener('click', () => {
-      const activeUninterrupted = state.models.find(m => !m.quota_limited && m.status_type === 'active');
-      const targetId = activeUninterrupted ? activeUninterrupted.id : (
-        state.models.some(m => m.id === 'deepseek-v4-flash') ? 'deepseek-v4-flash' : 'deepseek-chat'
-      );
-      el.modelSelect.value = targetId;
-      onModelSelected();
-    });
-    if (el.btnSwitchGlm) {
-      el.btnSwitchGlm.addEventListener('click', () => {
-        el.modelSelect.value = 'glm-4-plus';
+    if (el.btnSwitchDeepSeek) {
+      el.btnSwitchDeepSeek.addEventListener('click', () => {
+        const targetId = 'deepseek-v4-flash';
+        el.modelSelect.value = targetId;
         onModelSelected();
       });
-    }
-    if (el.btnSwitchFlash) {
-      el.btnSwitchFlash.addEventListener('click', () => {
-        el.modelSelect.value = 'deepseek-v4-flash';
-        onModelSelected();
-      });
-    }
-    if (el.btnBannerDiscover) {
-      el.btnBannerDiscover.addEventListener('click', discoverModels);
     }
 
     // Window Controls
@@ -343,12 +321,12 @@
         updateKeyDisplay();
       }
 
-      // Pre-load raw API key for client requests
+      // Verify masked API key metadata
       if (state.hasApiKey) {
         try {
           const kr = await fetch('/api/config/key');
           const kd = await kr.json();
-          if (kd.api_key) state.apiKey = kd.api_key;
+          if (kd.masked_api_key) state.maskedApiKey = kd.masked_api_key;
         } catch (e) {}
       }
 
@@ -384,14 +362,13 @@
   // --- API Key Logic ---
   function updateKeyDisplay() {
     if (state.hasApiKey) {
-      el.keyDisplayValue.textContent = (state.isKeyRevealed && state.apiKey) ? state.apiKey : (state.maskedApiKey || 'sk-••••••••');
+      el.keyDisplayValue.textContent = state.maskedApiKey || 'sk-••••••••';
       el.btnEditKey.textContent = 'Edit';
-      el.btnToggleKeyMask.style.display = 'inline-block';
-      el.btnToggleKeyMask.textContent = state.isKeyRevealed ? 'Hide' : 'Show';
+      if (el.btnToggleKeyMask) el.btnToggleKeyMask.style.display = 'none';
     } else {
       el.keyDisplayValue.textContent = 'Not Set (Click to enter)';
       el.btnEditKey.textContent = 'Enter Key';
-      el.btnToggleKeyMask.style.display = 'none';
+      if (el.btnToggleKeyMask) el.btnToggleKeyMask.style.display = 'none';
       state.isKeyRevealed = false;
     }
   }
@@ -403,25 +380,8 @@
       return;
     }
     el.keyDrawer.style.display = 'block';
-
-    // If key exists, pre-load into input so user can edit it
-    if (state.hasApiKey) {
-      if (!state.apiKey) {
-        try {
-          const res = await fetch('/api/config/key');
-          const data = await res.json();
-          if (data.api_key) {
-            state.apiKey = data.api_key;
-          }
-        } catch (e) {
-          console.warn('Failed to fetch key for edit:', e);
-        }
-      }
-      el.inputApiKey.value = state.apiKey || '';
-    } else {
-      el.inputApiKey.value = '';
-    }
-
+    el.inputApiKey.value = '';
+    el.inputApiKey.placeholder = state.hasApiKey ? 'Enter new API key (sk-...)' : 'Paste API key (sk-...)';
     el.inputApiKey.type = 'password';
     if (el.btnInputEye) el.btnInputEye.textContent = '👁️';
     el.inputApiKey.focus();
@@ -437,24 +397,8 @@
     }
   }
 
-  async function toggleKeyMaskDisplay() {
-    state.isKeyRevealed = !state.isKeyRevealed;
-    if (state.isKeyRevealed) {
-      if (!state.apiKey) {
-        try {
-          const res = await fetch('/api/config/key');
-          const data = await res.json();
-          state.apiKey = data.api_key || '';
-        } catch (e) {
-          console.warn('Failed to fetch key for reveal:', e);
-        }
-      }
-      el.keyDisplayValue.textContent = state.apiKey || state.maskedApiKey;
-      el.btnToggleKeyMask.textContent = 'Hide';
-    } else {
-      el.keyDisplayValue.textContent = state.maskedApiKey;
-      el.btnToggleKeyMask.textContent = 'Show';
-    }
+  function toggleKeyMaskDisplay() {
+    // Secure design: raw key remains in Python DPAPI storage
   }
 
   async function saveApiKey() {
@@ -473,12 +417,12 @@
       const data = await res.json();
       state.hasApiKey = data.has_api_key;
       state.maskedApiKey = data.masked_api_key;
-      state.apiKey = data.api_key || key;
+      state.apiKey = '';
 
       updateKeyDisplay();
       el.keyDrawer.style.display = 'none';
       el.inputApiKey.value = '';
-      if (el.settingApiKey) el.settingApiKey.value = state.apiKey;
+      if (el.settingApiKey) el.settingApiKey.value = '';
 
       // Test connection immediately with new key
       testConnection(true);
@@ -527,17 +471,13 @@
 
     el.batchPill.textContent = `Batch ${schedule.batch_number}`;
     el.localTimeDisplay.textContent = schedule.local_display;
-    el.beijingRefTime.textContent = `Beijing: ${schedule.daily_schedule_beijing}`;
-    el.utcRefTime.textContent = schedule.daily_schedule_utc;
-    el.dailyScheduleTimes.textContent = schedule.daily_schedule_local;
+    if (el.beijingRefTime) el.beijingRefTime.textContent = `Beijing: ${schedule.daily_schedule_beijing}`;
+    if (el.utcRefTime) el.utcRefTime.textContent = schedule.daily_schedule_utc;
+    if (el.dailyScheduleTimes) el.dailyScheduleTimes.textContent = schedule.daily_schedule_local;
 
     if (el.compactLocalTime) {
       const tz = schedule.user_timezone || 'IST';
       el.compactLocalTime.textContent = `(${schedule.local_time} ${tz})`;
-    }
-    if (el.bannerLocalTarget) {
-      const tz = schedule.user_timezone || 'IST';
-      el.bannerLocalTarget.textContent = `at ${schedule.local_time} (${tz})`;
     }
 
     tickCountdown();
@@ -670,7 +610,6 @@
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
         body: JSON.stringify({
-          api_key: state.apiKey,
           model_id: selectedModel,
           base_url: state.baseUrl
         })
@@ -739,56 +678,49 @@
       el.compactStatusDot.style.backgroundColor = 'var(--status-available)';
       el.compactStatusText.textContent = 'AVAILABLE (200)';
       el.compactStatusText.style.color = 'var(--status-available)';
-      el.quotaExhaustedBanner.style.display = 'none';
-      if (el.noChannelBanner) el.noChannelBanner.style.display = 'none';
+      if (el.statusActionRow) el.statusActionRow.style.display = 'none';
     } else if (data.is_quota_exhausted || data.status_code === 402) {
       el.headerPulseDot.style.backgroundColor = 'var(--status-exhausted)';
       el.headerPulseDot.style.boxShadow = '0 0 10px var(--status-exhausted-glow)';
       el.compactStatusDot.style.backgroundColor = 'var(--status-exhausted)';
       el.compactStatusText.textContent = '402 QUOTA EMPTY';
       el.compactStatusText.style.color = 'var(--status-exhausted)';
-      el.quotaExhaustedBanner.style.display = 'block';
-      if (el.noChannelBanner) el.noChannelBanner.style.display = 'none';
+      if (el.statusActionRow) el.statusActionRow.style.display = 'flex';
     } else if (statusType === 'no_channel' || data.status_code === 503) {
       el.headerPulseDot.style.backgroundColor = 'var(--status-scheduled)';
       el.headerPulseDot.style.boxShadow = '0 0 10px var(--status-scheduled-glow)';
       el.compactStatusDot.style.backgroundColor = 'var(--status-scheduled)';
       el.compactStatusText.textContent = '503 NO CHANNEL';
       el.compactStatusText.style.color = 'var(--status-scheduled)';
-      el.quotaExhaustedBanner.style.display = 'none';
-      if (el.noChannelBanner) el.noChannelBanner.style.display = 'block';
+      if (el.statusActionRow) el.statusActionRow.style.display = 'flex';
     } else if (statusType === 'unauthorized' || data.status_code === 401) {
       el.headerPulseDot.style.backgroundColor = 'var(--status-exhausted)';
       el.headerPulseDot.style.boxShadow = '0 0 10px var(--status-exhausted-glow)';
       el.compactStatusDot.style.backgroundColor = 'var(--status-exhausted)';
       el.compactStatusText.textContent = '401 UNAUTHORIZED';
       el.compactStatusText.style.color = 'var(--status-exhausted)';
-      el.quotaExhaustedBanner.style.display = 'none';
-      if (el.noChannelBanner) el.noChannelBanner.style.display = 'none';
+      if (el.statusActionRow) el.statusActionRow.style.display = 'none';
     } else if (statusType === 'no_key') {
       el.headerPulseDot.style.backgroundColor = 'var(--status-scheduled)';
       el.headerPulseDot.style.boxShadow = '0 0 10px var(--status-scheduled-glow)';
       el.compactStatusDot.style.backgroundColor = 'var(--status-scheduled)';
       el.compactStatusText.textContent = 'KEY REQUIRED';
       el.compactStatusText.style.color = 'var(--status-scheduled)';
-      el.quotaExhaustedBanner.style.display = 'none';
-      if (el.noChannelBanner) el.noChannelBanner.style.display = 'none';
+      if (el.statusActionRow) el.statusActionRow.style.display = 'none';
     } else if (data.status_code && data.status_code > 0) {
       el.headerPulseDot.style.backgroundColor = 'var(--status-exhausted)';
       el.headerPulseDot.style.boxShadow = '0 0 10px var(--status-exhausted-glow)';
       el.compactStatusDot.style.backgroundColor = 'var(--status-exhausted)';
       el.compactStatusText.textContent = `HTTP ${data.status_code}`;
       el.compactStatusText.style.color = 'var(--status-exhausted)';
-      el.quotaExhaustedBanner.style.display = 'none';
-      if (el.noChannelBanner) el.noChannelBanner.style.display = 'none';
+      if (el.statusActionRow) el.statusActionRow.style.display = 'none';
     } else {
       el.headerPulseDot.style.backgroundColor = 'var(--status-offline)';
       el.headerPulseDot.style.boxShadow = 'none';
       el.compactStatusDot.style.backgroundColor = 'var(--status-offline)';
       el.compactStatusText.textContent = 'OFFLINE';
       el.compactStatusText.style.color = 'var(--text-secondary)';
-      el.quotaExhaustedBanner.style.display = 'none';
-      if (el.noChannelBanner) el.noChannelBanner.style.display = 'none';
+      if (el.statusActionRow) el.statusActionRow.style.display = 'none';
     }
 
     // Refresh model list status badge
@@ -975,7 +907,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
-        body: JSON.stringify({ api_key: state.apiKey })
+        body: JSON.stringify({})
       });
       clearTimeout(timeoutId);
       const data = await res.json();
@@ -1004,7 +936,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
-        body: JSON.stringify({ api_key: state.apiKey, base_url: state.baseUrl })
+        body: JSON.stringify({ base_url: state.baseUrl })
       });
       clearTimeout(timeoutId);
       const data = await res.json();
@@ -1275,10 +1207,8 @@
       el.settingTimezone.value = String(state.userOffsetMinutes);
     }
     if (el.settingApiKey) {
-      el.settingApiKey.value = state.apiKey || '';
-      if (!state.apiKey && state.maskedApiKey) {
-        el.settingApiKey.placeholder = state.maskedApiKey;
-      }
+      el.settingApiKey.value = '';
+      el.settingApiKey.placeholder = state.hasApiKey ? (state.maskedApiKey || 'Key configured') : 'Enter API Key (sk-...)';
     }
   }
 

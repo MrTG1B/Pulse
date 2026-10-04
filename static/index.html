@@ -67,21 +67,20 @@
 
       <!-- API Key Quick Bar / Prompt -->
       <section class="api-key-strip" id="apiKeyStrip">
-        <div class="key-strip-left" id="keyStripLeft" style="cursor: pointer;" title="Click to view or edit API key">
+        <div class="key-strip-left" id="keyStripLeft" style="cursor: pointer;" title="Click to edit API key">
           <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" class="key-icon"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
           <span class="key-label">API KEY:</span>
           <span class="key-val" id="keyDisplayValue">Not Set</span>
         </div>
         <div class="key-strip-actions">
           <button class="text-action-btn" id="btnEditKey">Edit</button>
-          <button class="text-action-btn" id="btnToggleKeyMask" title="Show/Hide Key">Show</button>
         </div>
       </section>
 
       <!-- Key Input Drawer (Expands when editing or if key not set) -->
       <section class="key-drawer" id="keyDrawer" style="display: none;">
         <div class="drawer-header">
-          <span>AgentRouter API Key Setup & Edit</span>
+          <span>AgentRouter API Key Setup</span>
           <button class="drawer-close" id="btnCloseKeyDrawer">✕</button>
         </div>
         <div class="key-input-wrapper">
@@ -100,7 +99,7 @@
         </div>
       </section>
 
-      <!-- Primary Connection Status Card -->
+      <!-- Primary Connection Status Card (Single Unified Card) -->
       <section class="status-card" id="statusCard">
         <div class="status-top">
           <div class="status-badge" id="statusBadge">
@@ -115,51 +114,15 @@
 
         <p class="status-message" id="statusMessage">Connecting to AgentRouter gateway...</p>
 
-        <!-- Quota Alert Banner (Displays prominent guidance when 402 happens) -->
-        <div class="quota-exhausted-banner" id="quotaExhaustedBanner" style="display: none;">
-          <div class="banner-header">
-            <span class="banner-icon">⚠️</span>
-            <strong>Claude / GPT Budget Pool Exhausted (HTTP 402)</strong>
-          </div>
-          <div class="banner-timer-box">
-            <span class="banner-timer-label">Quota Replenishment:</span>
-            <strong class="banner-timer-countdown" id="bannerCountdown">00h 00m 00s</strong>
-            <span class="banner-timer-at" id="bannerLocalTarget">at 07:30 AM (IST)</span>
-          </div>
-          <p class="banner-desc">
-            Daily quota has run out. Next release batch will arrive in your local time above. You can switch to uninterrupted models anytime.
-          </p>
-          <div class="banner-action-row">
-            <button class="btn-switch-model" id="btnSwitchDeepSeek">
-              ⚡ Switch to DeepSeek V4 Flash (Active)
-            </button>
-            <button class="btn-switch-model btn-switch-glm" id="btnSwitchGlm">
-              ⚡ Switch to GLM-4 Plus
-            </button>
-          </div>
-        </div>
-
-        <!-- No Channel (HTTP 503) Alert Banner -->
-        <div class="quota-exhausted-banner no-channel-banner" id="noChannelBanner" style="display: none;">
-          <div class="banner-header">
-            <span class="banner-icon">⚠️</span>
-            <strong>No Channel for Selected Model (HTTP 503)</strong>
-          </div>
-          <p class="banner-desc">
-            This model is not available in your token's current channel pool (core). Switch to the verified active model or auto-discover available channels.
-          </p>
-          <div class="banner-action-row">
-            <button class="btn-switch-model" id="btnSwitchFlash">
-              ⚡ Switch to DeepSeek V4 Flash (Active 200 OK)
-            </button>
-            <button class="btn-switch-model btn-switch-glm" id="btnBannerDiscover">
-              🔍 Discover Channel Models
-            </button>
-          </div>
+        <!-- Quick 1-Click Action Button (Appears directly inside card when quota exhausted or no channel) -->
+        <div class="status-action-row" id="statusActionRow" style="display: none;">
+          <button class="btn-quick-switch" id="btnSwitchDeepSeek">
+            ⚡ Switch to DeepSeek V4 Flash (Active)
+          </button>
         </div>
       </section>
 
-      <!-- Countdown & Local Time Schedule Card (Core Requirement) -->
+      <!-- Countdown & Local Time Schedule Card -->
       <section class="countdown-card" id="countdownCard">
         <div class="countdown-header">
           <div class="countdown-title">
@@ -192,23 +155,15 @@
           <div class="cycle-progress-bar" id="cycleProgressBar" style="width: 0%;"></div>
         </div>
 
-        <!-- Exact Local Time Notice (User's context UTC+05:30) -->
+        <!-- Clean Local Time Notice -->
         <div class="local-time-notice">
           <div class="local-time-main">
-            <span class="label">When in My Local Time:</span>
+            <span class="label">Next Window:</span>
             <span class="value" id="localTimeDisplay">Calculating...</span>
           </div>
-          <div class="ref-time-sub">
-            <span id="beijingRefTime">Beijing: 10:00 / 19:00 CST</span>
-            <span class="dot-divider">•</span>
-            <span id="utcRefTime">02:00 / 11:00 UTC</span>
+          <div class="local-time-sub">
+            <span class="schedule-times" id="dailyScheduleTimes">Drops: 07:30 AM & 04:30 PM (IST)</span>
           </div>
-        </div>
-
-        <!-- Daily Release Schedule Information Accordion -->
-        <div class="schedule-info-row">
-          <span class="schedule-tag">📅 Daily Drops:</span>
-          <span class="schedule-times" id="dailyScheduleTimes">07:30 AM & 04:30 PM (IST)</span>
         </div>
       </section>
 

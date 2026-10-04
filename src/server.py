@@ -66,9 +66,6 @@ class AgentRouterRequestHandler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
         self.send_header("Connection", "close")
         self.end_headers()
@@ -78,12 +75,9 @@ class AgentRouterRequestHandler(BaseHTTPRequestHandler):
             pass
 
     def do_OPTIONS(self):
-        """Handle CORS pre-flight."""
+        """Handle CORS pre-flight safely for local requests."""
         self.close_connection = True
         self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
         self.send_header("Connection", "close")
         self.end_headers()
 
@@ -135,7 +129,6 @@ class AgentRouterRequestHandler(BaseHTTPRequestHandler):
             raw_key = config_manager.get_api_key()
             self._send_json({
                 "has_api_key": bool(raw_key),
-                "api_key": raw_key,
                 "masked_api_key": config_manager.mask_key(raw_key)
             })
             return
@@ -213,7 +206,6 @@ class AgentRouterRequestHandler(BaseHTTPRequestHandler):
             raw_key = config_manager.get_api_key()
             self._send_json({
                 "has_api_key": bool(raw_key),
-                "api_key": raw_key,
                 "masked_api_key": config_manager.mask_key(raw_key)
             })
             return

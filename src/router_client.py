@@ -262,16 +262,12 @@ def test_model_connection(
     elif is_quota_exhausted_detected:
         status_type = "quota_exhausted"
         status_title = "Quota Exhausted (402)"
-        message = (
-            "Budget pool quota has been exhausted. "
-            "Next quota will release at the scheduled batch time. "
-            "You can switch to DeepSeek / GLM for uninterrupted use."
-        )
+        message = "Budget pool quota has been exhausted. Claude & GPT models will resume at next release window."
         is_quota_exhausted = True
     elif status_code == 503 or "无可用渠道" in error_message or "no available channel" in err_lower:
         status_type = "no_channel"
         status_title = "No Channel (503)"
-        message = f"Model '{model_id}' is not in your API key channel group (core). Switch to deepseek-v4-flash (Active 200) or click Discover."
+        message = f"Model '{model_id}' is not in your channel group. Switch to deepseek-v4-flash or click Discover."
     elif status_code == 401:
         status_type = "unauthorized"
         if "unauthorized client" in err_lower:

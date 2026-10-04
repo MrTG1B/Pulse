@@ -707,14 +707,12 @@ summary,
   line-height: 1.45;
 }
 
-/* Quota Exhausted Banner */
-.quota-exhausted-banner {
+/* Status Action Row & Quick Switch Button (Single Unified Card) */
+.status-action-row {
   margin-top: 10px;
-  background: var(--status-exhausted-bg);
-  border: 1px solid var(--status-exhausted-border);
-  border-radius: var(--radius-sm);
-  padding: 9px 11px;
-  animation: fadeIn 0.25s ease;
+  display: flex;
+  gap: 8px;
+  animation: fadeIn 0.2s ease;
 }
 
 @keyframes fadeIn {
@@ -722,85 +720,32 @@ summary,
   to { opacity: 1; transform: translateY(0); }
 }
 
-.banner-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--status-exhausted);
-  font-size: 11px;
-  margin-bottom: 4px;
-}
-
-.banner-desc {
-  font-size: 10.5px;
-  color: var(--text-secondary);
-  margin-bottom: 7px;
-}
-
-.banner-timer-box {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 6px 0;
-  padding: 5px 9px;
-  background: var(--elevated);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-}
-
-.banner-timer-label {
-  color: var(--text-muted);
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.banner-timer-countdown {
-  color: var(--status-scheduled);
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  font-weight: 700;
-}
-
-.banner-timer-at {
-  color: var(--accent);
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.banner-action-row {
-  display: flex;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.btn-switch-model {
+.btn-quick-switch {
+  width: 100%;
   background: var(--accent-subtle);
   border: 1px solid var(--status-available-border);
   color: var(--accent);
-  flex: 1;
-  padding: 6px 9px;
+  padding: 8px 12px;
   border-radius: var(--radius-sm);
   font-weight: 700;
-  font-size: 10.5px;
+  font-size: 11px;
   cursor: pointer;
   transition: all 0.15s ease;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
-.btn-switch-model:hover {
+.btn-quick-switch:hover {
   background: var(--accent-subtle-hover);
   border-color: var(--accent);
+  box-shadow: 0 0 10px var(--status-available-glow);
 }
 
-.btn-switch-model.btn-switch-glm {
-  background: var(--elevated);
-  border: 1px solid var(--border);
-  color: var(--text-primary);
-}
-
-.btn-switch-model.btn-switch-glm:hover {
-  background: var(--elevated-hover);
-  border-color: #383838;
+.btn-quick-switch:active {
+  transform: scale(0.98);
 }
 
 /* Countdown Card */
@@ -913,14 +858,14 @@ summary,
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 8px 11px;
-  margin-bottom: 8px;
+  margin-bottom: 2px;
 }
 
 .local-time-main {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 
 .local-time-main .label {
@@ -936,30 +881,17 @@ summary,
   letter-spacing: -0.2px;
 }
 
-.ref-time-sub {
-  font-size: 9.5px;
+.local-time-sub {
+  font-size: 10px;
   color: var(--text-muted);
   display: flex;
-  gap: 6px;
   justify-content: flex-end;
 }
 
-.dot-divider {
-  opacity: 0.5;
-}
-
-.schedule-info-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 10.5px;
-  color: var(--text-muted);
-  padding: 2px 2px 0;
-}
-
 .schedule-times {
-  color: var(--text-primary);
-  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 500;
 }
 
 /* Model Control Card */

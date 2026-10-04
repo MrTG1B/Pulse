@@ -144,7 +144,7 @@ class TestConfigManager(unittest.TestCase):
         # Plaintext must NEVER appear in the disk file
         self.assertNotIn(secret_key, raw_disk_text)
         self.assertEqual(disk_json.get("api_key"), "")
-        self.assertTrue(disk_json.get("api_key_encrypted", "").startswith("enc:"))
+        self.assertTrue(disk_json.get("api_key_encrypted", "").startswith(("enc:dpapi:", "dev:b64:")))
 
         # In-memory retrieval must transparently decrypt via DPAPI
         self.assertEqual(config_manager.get_api_key(), secret_key)
@@ -170,13 +170,13 @@ class TestConfigManager(unittest.TestCase):
 
         self.assertNotIn(legacy_plaintext, disk_text)
         self.assertEqual(disk_json.get("api_key"), "")
-        self.assertTrue(disk_json.get("api_key_encrypted", "").startswith("enc:"))
+        self.assertTrue(disk_json.get("api_key_encrypted", "").startswith(("enc:dpapi:", "dev:b64:")))
 
     def test_encrypt_decrypt_secret_roundtrip(self):
         """Verifies encrypt_secret and decrypt_secret functions."""
         sample = "sk-ant-test-token-777-XYZ"
         ciphertext = config_manager.encrypt_secret(sample)
-        self.assertTrue(ciphertext.startswith("enc:"))
+        self.assertTrue(ciphertext.startswith(("enc:dpapi:", "dev:b64:")))
         self.assertNotEqual(ciphertext, sample)
         decrypted = config_manager.decrypt_secret(ciphertext)
         self.assertEqual(decrypted, sample)
