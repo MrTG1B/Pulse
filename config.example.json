@@ -1,5 +1,6 @@
 {
   "api_key": "",
+  "api_key_encrypted": "",
   "base_url": "https://agentrouter.org",
   "selected_model": "deepseek-v4-flash",
   "refresh_interval_sec": 30,

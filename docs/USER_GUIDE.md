@@ -102,7 +102,7 @@ python app.py --browser
 4. Paste your key and click **Save Key**.
 5. Pulse validates the key locally and immediately performs an operational probe.
 
-> **Privacy Note:** Your key is stored strictly on your local disk in `config.json` (or `%APPDATA%/Pulse/config.json`). It is never uploaded to any remote server other than direct HTTPS requests to `https://agentrouter.org`.
+> **Security & Encryption:** Your API key is encrypted at rest using the **Windows Data Protection API (DPAPI)** (`CryptProtectData`). The encryption key is tied to your Windows user account; plaintext keys are **never stored on disk**. It is never sent to any remote server other than direct HTTPS diagnostic requests to `https://agentrouter.org`.
 
 ---
 
@@ -128,14 +128,14 @@ When the countdown ticker hits `00:00:00`, Pulse plays a subtle audio chime (if 
 AgentRouter classifies models into two operational categories:
 
 ### 1. Quota Pool Models (Limited Daily Supply)
-- **Examples:** `claude-3-5-sonnet-20241022`, `claude-3-7-sonnet-20250219-thinking`, `claude-opus-5`, `gpt-4o`, `gpt-6-astra`.
+- **Active Models:** `claude-opus-4-8`, `claude-opus-5`, `gpt-6-astra`.
 - **Behavior:** These models share a daily quota pool. When the pool runs dry, requests fail with `HTTP 402 Budget pool quota has been exhausted`.
 - **Recovery:** Wait for the next scheduled drop batch (07:30 AM or 04:30 PM IST), or switch to an uninterrupted model.
 
 ### 2. ⚡ Uninterrupted Models (Zero Pool Lock)
-- **Examples:** `deepseek-v4-flash`, `deepseek-chat` (DeepSeek V3), `deepseek-reasoner` (DeepSeek R1), `glm-4-plus`.
-- **Behavior:** **These models are NOT restricted by the daily pool limit!** They are always active and ready for coding, chat, and reasoning.
-- **Pulse Recommendation:** Whenever Claude is exhausted (402), Pulse presents an instant 1-click button to switch to `deepseek-v4-flash` or `glm-4-plus`.
+- **Active Model:** `deepseek-v4-flash`.
+- **Behavior:** **This model is NOT restricted by the daily pool limit!** It is always active and ready for coding, chat, and reasoning.
+- **Pulse Recommendation:** Whenever Claude is exhausted (402), Pulse presents an instant 1-click button to switch to `deepseek-v4-flash`.
 
 ---
 

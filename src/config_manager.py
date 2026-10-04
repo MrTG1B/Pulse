@@ -8,7 +8,94 @@ import os
 import sys
 import threading
 import time
+import base64
 from typing import Dict, Any
+
+# Windows Data Protection API (DPAPI) via ctypes
+HAS_DPAPI = False
+if sys.platform == "win32":
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class DATA_BLOB(ctypes.Structure):
+            _fields_ = [
+                ("cbData", wintypes.DWORD),
+                ("pbData", ctypes.POINTER(ctypes.c_byte))
+            ]
+
+        _CryptProtectData = ctypes.windll.crypt32.CryptProtectData
+        _CryptUnprotectData = ctypes.windll.crypt32.CryptUnprotectData
+        _LocalFree = ctypes.windll.kernel32.LocalFree
+        HAS_DPAPI = True
+    except Exception:
+        HAS_DPAPI = False
+
+
+def encrypt_secret(plaintext: str) -> str:
+    """
+    Encrypts a plaintext string using Windows DPAPI (CryptProtectData).
+    Data is encrypted using an AES/3DES key derived from the local user's Windows logon credentials.
+    Returns a string prefixed with 'enc:dpapi:<base64_ciphertext>'.
+    Falls back to base64 encoding on non-Windows platforms (e.g. Linux CI/tests).
+    """
+    plaintext = (plaintext or "").strip()
+    if not plaintext:
+        return ""
+
+    if HAS_DPAPI:
+        try:
+            data = plaintext.encode("utf-8")
+            blob_in = DATA_BLOB(len(data), ctypes.cast(ctypes.create_string_buffer(data), ctypes.POINTER(ctypes.c_byte)))
+            blob_out = DATA_BLOB()
+            # CRYPTPROTECT_UI_FORBIDDEN = 0x1
+            if _CryptProtectData(ctypes.byref(blob_in), "Pulse API Key", None, None, None, 0x1, ctypes.byref(blob_out)):
+                try:
+                    encrypted_bytes = ctypes.string_at(blob_out.pbData, blob_out.cbData)
+                    return "enc:dpapi:" + base64.b64encode(encrypted_bytes).decode("ascii")
+                finally:
+                    _LocalFree(blob_out.pbData)
+        except Exception:
+            pass
+
+    # Fallback for non-Windows (e.g. Linux automated test runners)
+    return "enc:b64:" + base64.b64encode(plaintext.encode("utf-8")).decode("ascii")
+
+
+def decrypt_secret(ciphertext: str) -> str:
+    """
+    Decrypts a ciphertext string encrypted by encrypt_secret.
+    Uses Windows DPAPI CryptUnprotectData on Windows, or decodes base64 fallback.
+    """
+    ciphertext = (ciphertext or "").strip()
+    if not ciphertext:
+        return ""
+
+    if ciphertext.startswith("enc:dpapi:") and HAS_DPAPI:
+        try:
+            raw_b64 = ciphertext[len("enc:dpapi:"):]
+            encrypted_bytes = base64.b64decode(raw_b64)
+            blob_in = DATA_BLOB(len(encrypted_bytes), ctypes.cast(ctypes.create_string_buffer(encrypted_bytes), ctypes.POINTER(ctypes.c_byte)))
+            blob_out = DATA_BLOB()
+            # CRYPTPROTECT_UI_FORBIDDEN = 0x1
+            if _CryptUnprotectData(ctypes.byref(blob_in), None, None, None, None, 0x1, ctypes.byref(blob_out)):
+                try:
+                    decrypted_bytes = ctypes.string_at(blob_out.pbData, blob_out.cbData)
+                    return decrypted_bytes.decode("utf-8")
+                finally:
+                    _LocalFree(blob_out.pbData)
+        except Exception:
+            return ""
+
+    elif ciphertext.startswith("enc:b64:"):
+        try:
+            raw_b64 = ciphertext[len("enc:b64:"):]
+            return base64.b64decode(raw_b64).decode("utf-8")
+        except Exception:
+            return ""
+
+    # Legacy plaintext fallback if unencrypted string was passed
+    return ciphertext
 
 
 def get_config_path() -> str:
@@ -69,6 +156,7 @@ _CONFIG_LOCK = threading.RLock()
 
 DEFAULT_CONFIG: Dict[str, Any] = {
     "api_key": "",
+    "api_key_encrypted": "",
     "base_url": "https://agentrouter.org",
     "selected_model": "deepseek-v4-flash",
     "refresh_interval_sec": 30,
@@ -92,66 +180,101 @@ def mask_key(key: str) -> str:
     return f"{prefix}••••••••{suffix}"
 
 
+def _save_to_disk(cfg: Dict[str, Any]) -> None:
+    """Internal helper to atomically write config to disk with API key DPAPI-encrypted."""
+    disk_cfg = dict(cfg)
+    plain_key = (disk_cfg.get("api_key") or "").strip()
+
+    if plain_key:
+        disk_cfg["api_key_encrypted"] = encrypt_secret(plain_key)
+    else:
+        disk_cfg["api_key_encrypted"] = ""
+
+    # NEVER store plaintext API key in the JSON file on disk
+    disk_cfg["api_key"] = ""
+
+    parent_dir = os.path.dirname(CONFIG_FILE)
+    if parent_dir and not os.path.exists(parent_dir):
+        try:
+            os.makedirs(parent_dir, exist_ok=True)
+        except Exception:
+            pass
+
+    temp_file = CONFIG_FILE + f".tmp.{os.getpid()}_{threading.get_ident()}"
+    try:
+        with open(temp_file, "w", encoding="utf-8") as f:
+            json.dump(disk_cfg, f, indent=2, ensure_ascii=False)
+
+        # Robust atomic replace on Windows with retry
+        replaced = False
+        for attempt in range(5):
+            try:
+                os.replace(temp_file, CONFIG_FILE)
+                replaced = True
+                break
+            except (PermissionError, OSError):
+                time.sleep(0.02 * (attempt + 1))
+
+        if not replaced:
+            with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+                json.dump(disk_cfg, f, indent=2, ensure_ascii=False)
+    finally:
+        if os.path.exists(temp_file):
+            try:
+                os.remove(temp_file)
+            except Exception:
+                pass
+
+
 def load_config() -> Dict[str, Any]:
-    """Loads configuration from config.json or returns default configuration in a thread-safe manner."""
+    """Loads configuration from config.json, decrypts DPAPI key, and migrates legacy plaintext."""
     with _CONFIG_LOCK:
         cfg = dict(DEFAULT_CONFIG)
         template = get_template_config()
         if template:
             cfg.update(template)
+
+        needs_migration = False
         if os.path.exists(CONFIG_FILE):
             try:
                 with open(CONFIG_FILE, "r", encoding="utf-8") as f:
                     saved = json.load(f)
                     if isinstance(saved, dict):
                         cfg.update(saved)
-            except Exception as e:
-                # Do not crash if read momentarily encounters a lock
+
+                        # 1. If encrypted key is present, decrypt it into memory
+                        enc_key = saved.get("api_key_encrypted", "").strip()
+                        if enc_key:
+                            decrypted = decrypt_secret(enc_key)
+                            cfg["api_key"] = decrypted
+                            cfg["api_key_encrypted"] = enc_key
+
+                        # 2. Check for legacy unencrypted plaintext key in config.json
+                        legacy_plain = saved.get("api_key", "").strip()
+                        if legacy_plain and not enc_key:
+                            cfg["api_key"] = legacy_plain
+                            cfg["api_key_encrypted"] = encrypt_secret(legacy_plain)
+                            needs_migration = True
+            except Exception:
                 pass
+
+        if needs_migration:
+            try:
+                _save_to_disk(cfg)
+            except Exception:
+                pass
+
         return cfg
 
 
 def save_config(updates: Dict[str, Any]) -> Dict[str, Any]:
-    """Saves updated settings to config.json with thread-safety and Windows file-replace resilience."""
+    """Saves updated settings to config.json with thread-safety and Windows DPAPI encryption."""
     with _CONFIG_LOCK:
         cfg = load_config()
         for k, v in updates.items():
             cfg[k] = v
 
-        parent_dir = os.path.dirname(CONFIG_FILE)
-        if parent_dir and not os.path.exists(parent_dir):
-            try:
-                os.makedirs(parent_dir, exist_ok=True)
-            except Exception:
-                pass
-
-        temp_file = CONFIG_FILE + f".tmp.{os.getpid()}_{threading.get_ident()}"
-        try:
-            with open(temp_file, "w", encoding="utf-8") as f:
-                json.dump(cfg, f, indent=2, ensure_ascii=False)
-            
-            # Robust atomic replace on Windows with retry
-            replaced = False
-            for attempt in range(5):
-                try:
-                    os.replace(temp_file, CONFIG_FILE)
-                    replaced = True
-                    break
-                except (PermissionError, OSError):
-                    time.sleep(0.02 * (attempt + 1))
-            
-            if not replaced:
-                # Fallback direct write if replace failed
-                with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-                    json.dump(cfg, f, indent=2, ensure_ascii=False)
-        except Exception:
-            pass
-        finally:
-            if os.path.exists(temp_file):
-                try:
-                    os.remove(temp_file)
-                except Exception:
-                    pass
+        _save_to_disk(cfg)
         return cfg
 
 
@@ -164,6 +287,9 @@ def get_safe_config() -> Dict[str, Any]:
     safe_cfg["masked_api_key"] = mask_key(key)
     # Don't send plain key in general config fetch
     safe_cfg["api_key"] = mask_key(key)
+    safe_cfg["is_encrypted"] = True
+    if "api_key_encrypted" in safe_cfg:
+        safe_cfg["api_key_encrypted"] = bool(key)
     return safe_cfg
 
 

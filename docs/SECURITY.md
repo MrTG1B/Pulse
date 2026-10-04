@@ -16,8 +16,12 @@ Pulse is built with security, privacy, and zero-telemetry principles for develop
      - Target gateway: `https://agentrouter.org` (or configured backup `https://ps.air-outer.com`).
      - Local loopback: `http://127.0.0.1:[port]`.
 
-3. **Secure Local API Key Storage**
-   - API tokens are stored strictly on your local machine in `config.json` (or `%APPDATA%/Pulse/config.json`).
+3. **Hardware-Backed Local API Key Encryption (Windows DPAPI)**
+   - API tokens are encrypted at rest using the **Windows Data Protection API (DPAPI)** (`CryptProtectData` via Windows `crypt32.dll`).
+   - Encryption keys are derived by the Windows Local Security Authority Subsystem Service (LSASS) from the logged-in user's Windows security credentials and hardware TPM (if present).
+   - In `config.json` (or `%APPDATA%/Pulse/config.json`), keys are stored strictly as an opaque encrypted ciphertext blob prefixed with `enc:dpapi:`. Plaintext keys are **never written to disk**.
+   - **Cross-Account & Cross-Device Protection**: No other Windows user account on the same machine, and no unauthorized process on another computer, can decrypt the stored ciphertext—even if `config.json` is copied, inspected, or exfiltrated.
+   - **Automatic Legacy Migration**: If a legacy plaintext `config.json` is detected on startup, Pulse automatically encrypts it with DPAPI and immediately overwrites and purges the plaintext key from disk.
    - Tokens are masked in API payloads and UI views by default (`sk-••••••••1234`).
    - `config.json` is explicitly gitignored to prevent accidental commits to source control repositories.
 

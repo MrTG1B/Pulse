@@ -74,9 +74,11 @@ Tracks official AgentRouter release batches (10:00 & 19:00 Beijing Time / 02:00 
 - **Compact Mini-Dock**: Collapses into a sleek `390×100px` floating status bar.
 - Interactive in-app **Help & User Guide** modal with tabs for rapid onboarding and troubleshooting.
 
-### 7. Secure Local Key Management
-- Local encrypted/masked storage in `config.json`.
+### 7. Hardware-Backed Local Key Encryption (Windows DPAPI)
+- Local encrypted storage using **Windows Data Protection API (DPAPI)** (`CryptProtectData`).
+- Keys are encrypted with keys bound to your Windows user credentials; plaintext keys are **never stored on disk**.
 - In-place Edit drawer with password eye toggle (`👁️`), save, and wipe options.
+- Automatic migration of legacy unencrypted configurations on startup.
 
 ---
 

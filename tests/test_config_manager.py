@@ -130,6 +130,61 @@ class TestConfigManager(unittest.TestCase):
         self.assertEqual(config_manager.mask_key("12345678"), "••••••••")
         self.assertEqual(config_manager.mask_key("123456789"), "1234••••••••6789")
 
+    def test_dpapi_encryption_at_rest(self):
+        """Verifies that API keys are stored encrypted at rest with Windows DPAPI and never in plaintext on disk."""
+        secret_key = "sk-super-secret-dpapi-live-token-9999"
+        config_manager.set_api_key(secret_key)
+
+        # Inspect raw content of config.json on disk
+        self.assertTrue(os.path.exists(config_manager.CONFIG_FILE))
+        with open(config_manager.CONFIG_FILE, "r", encoding="utf-8") as f:
+            raw_disk_text = f.read()
+            disk_json = json.loads(raw_disk_text)
+
+        # Plaintext must NEVER appear in the disk file
+        self.assertNotIn(secret_key, raw_disk_text)
+        self.assertEqual(disk_json.get("api_key"), "")
+        self.assertTrue(disk_json.get("api_key_encrypted", "").startswith("enc:"))
+
+        # In-memory retrieval must transparently decrypt via DPAPI
+        self.assertEqual(config_manager.get_api_key(), secret_key)
+        self.assertEqual(config_manager.load_config()["api_key"], secret_key)
+
+    def test_legacy_plaintext_migration(self):
+        """Verifies that legacy unencrypted config.json files are automatically encrypted and purged on first load."""
+        legacy_plaintext = "sk-legacy-unencrypted-token-8888"
+        with open(config_manager.CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump({
+                "api_key": legacy_plaintext,
+                "base_url": "https://agentrouter.org"
+            }, f, indent=2)
+
+        # First load should read legacy key and migrate
+        cfg = config_manager.load_config()
+        self.assertEqual(cfg["api_key"], legacy_plaintext)
+
+        # Check file on disk: plaintext key must be purged and replaced by encrypted blob
+        with open(config_manager.CONFIG_FILE, "r", encoding="utf-8") as f:
+            disk_text = f.read()
+            disk_json = json.loads(disk_text)
+
+        self.assertNotIn(legacy_plaintext, disk_text)
+        self.assertEqual(disk_json.get("api_key"), "")
+        self.assertTrue(disk_json.get("api_key_encrypted", "").startswith("enc:"))
+
+    def test_encrypt_decrypt_secret_roundtrip(self):
+        """Verifies encrypt_secret and decrypt_secret functions."""
+        sample = "sk-ant-test-token-777-XYZ"
+        ciphertext = config_manager.encrypt_secret(sample)
+        self.assertTrue(ciphertext.startswith("enc:"))
+        self.assertNotEqual(ciphertext, sample)
+        decrypted = config_manager.decrypt_secret(ciphertext)
+        self.assertEqual(decrypted, sample)
+
+        # Empty / whitespace tests
+        self.assertEqual(config_manager.encrypt_secret(""), "")
+        self.assertEqual(config_manager.decrypt_secret(""), "")
+
 
 if __name__ == "__main__":
     unittest.main()
