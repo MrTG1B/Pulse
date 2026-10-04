@@ -1448,3 +1448,319 @@ details[open] summary .summary-caret {
   background: var(--elevated-hover);
   border-color: #383838;
 }
+
+/* ==========================================================
+   Model Filter Bar & Category Chips
+   ========================================================== */
+.models-filter-bar {
+  display: flex;
+  gap: 6px;
+  padding: 8px 0 10px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.models-filter-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-chip {
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  border-color: #444444;
+  color: var(--text-primary);
+}
+
+.filter-chip.active {
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ==========================================================
+   Help & User Guide Modal
+   ========================================================== */
+.help-modal-card {
+  max-width: 390px;
+  width: 95%;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-widget);
+  overflow: hidden;
+}
+
+.modal-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-header-brand h3 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.help-tabs-header {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--elevated);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.help-tabs-header::-webkit-scrollbar {
+  display: none;
+}
+
+.help-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.help-tab-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.help-tab-btn.active {
+  color: var(--accent);
+  background: var(--accent-subtle);
+}
+
+.help-modal-body {
+  padding: 14px;
+  overflow-y: auto;
+  max-height: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) var(--surface);
+}
+
+.help-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.help-step-box {
+  display: flex;
+  gap: 10px;
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.step-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #0A0A0A;
+  font-weight: 800;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.help-schedule-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.schedule-grid-card {
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+}
+
+.grid-card-badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.grid-card-time {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.grid-card-utc,
+.grid-card-local {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.help-hint,
+.help-text {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.help-model-type-card {
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.help-model-type-card .type-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.help-troubleshoot-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.help-troubleshoot-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+
+.badge-mini {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  align-self: flex-start;
+  margin-bottom: 2px;
+}
+
+.badge-mini.status-active {
+  background: var(--status-available-bg);
+  color: var(--status-available);
+  border: 1px solid var(--status-available-border);
+}
+
+.badge-mini.status-scheduled {
+  background: var(--status-scheduled-bg);
+  color: var(--status-scheduled);
+  border: 1px solid var(--status-scheduled-border);
+}
+
+.badge-mini.status-exhausted {
+  background: var(--status-exhausted-bg);
+  color: var(--status-exhausted);
+  border: 1px solid var(--status-exhausted-border);
+}
+
+.badge-mini.status-offline {
+  background: var(--status-offline-bg);
+  color: var(--status-offline);
+  border: 1px solid var(--status-offline-border);
+}
+
+.shortcuts-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shortcut-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+}
+
+kbd {
+  background: var(--surface);
+  border: 1px solid #383838;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent);
+}
+
+.help-modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--elevated);
+  border-top: 1px solid var(--border);
+}
+
+.help-footer-links {
+  display: flex;
+  gap: 12px;
+}
+
+.footer-link {
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.footer-link:hover {
+  color: var(--accent);
+}
+

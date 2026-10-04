@@ -95,6 +95,16 @@ class TestConfigManager(unittest.TestCase):
 
         self.assertEqual(len(errors), 0, f"Concurrent config operations failed with: {errors}")
 
+    def test_get_config_path(self):
+        """Verifies get_config_path returns a valid path ending in config.json."""
+        path = config_manager.get_config_path()
+        self.assertTrue(path.endswith("config.json"))
+
+    def test_get_template_config(self):
+        """Verifies get_template_config returns a dictionary of defaults."""
+        tmpl = config_manager.get_template_config()
+        self.assertIsInstance(tmpl, dict)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -74,6 +74,15 @@ class TestServerEndpoints(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertIn("tickCountdown", resp.text)
 
+    def test_serve_favicon_ico(self):
+        resp = requests.get(f"{self.base_url}/favicon.ico")
+        self.assertEqual(resp.status_code, 200)
+        self.assertGreater(len(resp.content), 0)
+
+    def test_get_bundle_dir(self):
+        bundle_dir = server.get_bundle_dir()
+        self.assertTrue(os.path.isdir(bundle_dir))
+
     def test_api_status_endpoint(self):
         resp = requests.get(f"{self.base_url}/api/status")
         self.assertEqual(resp.status_code, 200)

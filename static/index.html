@@ -31,6 +31,12 @@
         <button class="icon-btn" id="btnSettings" title="API Key & Settings">
           <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
+        <button class="icon-btn" id="btnHelp" title="User Guide & Help">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </button>
+        <button class="icon-btn" id="btnMinimize" title="Minimize Window">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
         <button class="icon-btn close-btn" id="btnClose" title="Close / Hide">
           <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -294,9 +300,17 @@
           <span>Model Quota Status Overview</span>
           <span class="summary-caret">▼</span>
         </summary>
-        <div class="models-overview-content" id="modelsOverviewList">
-          <!-- Populated dynamically via JS -->
-          <div class="overview-loading">Loading models...</div>
+        <div class="models-overview-content" id="modelsOverviewContent">
+          <div class="models-filter-bar" id="modelsFilterBar">
+            <button class="filter-chip active" data-filter="all" type="button">All</button>
+            <button class="filter-chip" data-filter="active" type="button">🟢 Active</button>
+            <button class="filter-chip" data-filter="uninterrupted" type="button">⚡ Uninterrupted</button>
+            <button class="filter-chip" data-filter="quota" type="button">⏱️ Quota Pool</button>
+          </div>
+          <div class="models-overview-list" id="modelsOverviewList">
+            <!-- Populated dynamically via JS -->
+            <div class="overview-loading">Loading models...</div>
+          </div>
         </div>
       </details>
 
@@ -369,6 +383,161 @@
         </div>
         <div class="modal-footer">
           <button class="btn-secondary" id="btnModalClose">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Help & Commercial User Guide Modal -->
+    <div class="modal-overlay" id="helpModal" style="display: none;">
+      <div class="modal-card help-modal-card">
+        <div class="modal-header">
+          <div class="modal-header-brand">
+            <img src="icon.png" width="18" height="18" alt="Pulse">
+            <h3>Pulse — User Guide & Help</h3>
+          </div>
+          <button class="modal-close" id="btnCloseHelpModal">✕</button>
+        </div>
+
+        <div class="help-tabs-header">
+          <button class="help-tab-btn active" data-tab="tabQuickStart" type="button">Quick Start</button>
+          <button class="help-tab-btn" data-tab="tabQuotas" type="button">Quota Drops</button>
+          <button class="help-tab-btn" data-tab="tabModels" type="button">Models & Pools</button>
+          <button class="help-tab-btn" data-tab="tabTroubleshooting" type="button">Troubleshooting</button>
+          <button class="help-tab-btn" data-tab="tabShortcuts" type="button">Shortcuts</button>
+        </div>
+
+        <div class="modal-body help-modal-body">
+          <!-- Tab 1: Quick Start -->
+          <div class="help-tab-content active" id="tabQuickStart">
+            <h4 class="help-section-title">🚀 3-Step Quick Start</h4>
+            <div class="help-step-box">
+              <span class="step-num">1</span>
+              <div>
+                <strong>Get your API Key:</strong>
+                <p>Create or copy your key from the official <a href="https://ps.air-outer.com/console/token" target="_blank" class="helper-link">AgentRouter Token Console</a>.</p>
+              </div>
+            </div>
+            <div class="help-step-box">
+              <span class="step-num">2</span>
+              <div>
+                <strong>Enter & Save Key:</strong>
+                <p>Click <em>Enter Key</em> at top or open <em>Settings</em> (⚙️). Paste your key and click <em>Save Key</em>. It is stored securely on your local device.</p>
+              </div>
+            </div>
+            <div class="help-step-box">
+              <span class="step-num">3</span>
+              <div>
+                <strong>Monitor Real-Time Quotas:</strong>
+                <p>Select any model (e.g. Claude 3.5 Sonnet or DeepSeek V4 Flash) and click <em>Test Connection</em>. Keep Pulse docked while coding in Cursor or VS Code!</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 2: Quota Drops -->
+          <div class="help-tab-content" id="tabQuotas" style="display: none;">
+            <h4 class="help-section-title">⏱️ Daily Quota Release Schedule</h4>
+            <p class="help-text">
+              AgentRouter allocates Claude & GPT pool quotas twice daily at exact fixed intervals:
+            </p>
+            <div class="help-schedule-grid">
+              <div class="schedule-grid-card">
+                <span class="grid-card-badge">Batch 1 (Morning)</span>
+                <span class="grid-card-time">10:00 CST (Beijing)</span>
+                <span class="grid-card-utc">02:00 UTC</span>
+                <span class="grid-card-local">07:30 AM IST (India)</span>
+              </div>
+              <div class="schedule-grid-card">
+                <span class="grid-card-badge">Batch 2 (Evening)</span>
+                <span class="grid-card-time">19:00 CST (Beijing)</span>
+                <span class="grid-card-utc">11:00 UTC</span>
+                <span class="grid-card-local">04:30 PM IST (India)</span>
+              </div>
+            </div>
+            <p class="help-hint">
+              💡 The countdown timer on your screen shows the exact time remaining until the next release. If audio notifications (🔔) are enabled, a discreet chime rings at 00:00:00.
+            </p>
+          </div>
+
+          <!-- Tab 3: Models & Pools -->
+          <div class="help-tab-content" id="tabModels" style="display: none;">
+            <h4 class="help-section-title">⚡ Quota Pool vs. Uninterrupted Models</h4>
+            <div class="help-model-type-card">
+              <div class="type-header">
+                <span class="status-indicator-dot" style="background-color: var(--status-scheduled)"></span>
+                <strong>Quota Pool Models (Claude & OpenAI)</strong>
+              </div>
+              <p>Claude 3.5 Sonnet, Claude 3.7 Thinking, Claude Opus 5, GPT-4o, and GPT-6 Astra draw from the shared daily allocation. When depleted, you will see <em>HTTP 402 Budget Pool Quota Exhausted</em>.</p>
+            </div>
+            <div class="help-model-type-card">
+              <div class="type-header">
+                <span class="status-indicator-dot" style="background-color: var(--status-available)"></span>
+                <strong>⚡ Uninterrupted Models (Zero Pool Lock)</strong>
+              </div>
+              <p><strong>DeepSeek V4 Flash</strong>, <strong>DeepSeek Chat (V3)</strong>, <strong>DeepSeek Reasoner (R1)</strong>, and <strong>GLM-4 Plus</strong> are NOT bound to daily quota limits! You can switch to them anytime for uninterrupted work.</p>
+            </div>
+          </div>
+
+          <!-- Tab 4: Troubleshooting -->
+          <div class="help-tab-content" id="tabTroubleshooting" style="display: none;">
+            <h4 class="help-section-title">🛠️ Status Code Diagnostic Reference</h4>
+            <ul class="help-troubleshoot-list">
+              <li>
+                <span class="badge-mini status-active">200 OK</span>
+                <strong>Available & Active:</strong> Model is online and ready for API requests.
+              </li>
+              <li>
+                <span class="badge-mini status-exhausted">402</span>
+                <strong>Budget Pool Exhausted:</strong> Daily quota ran out. Wait for next drop or switch to DeepSeek V4 Flash.
+              </li>
+              <li>
+                <span class="badge-mini status-scheduled">503</span>
+                <strong>No Channel:</strong> The model is not mapped to your key's current channel group. Click <em>Discover</em> or pick DeepSeek V4 Flash.
+              </li>
+              <li>
+                <span class="badge-mini status-exhausted">401</span>
+                <strong>Unauthorized:</strong> Invalid API key or blocked client identity. Pulse includes allowlisted headers automatically.
+              </li>
+              <li>
+                <span class="badge-mini status-offline">0 / Offline</span>
+                <strong>Connection Error:</strong> Check your internet connection or verify https://agentrouter.org status.
+              </li>
+            </ul>
+          </div>
+
+          <!-- Tab 5: Shortcuts -->
+          <div class="help-tab-content" id="tabShortcuts" style="display: none;">
+            <h4 class="help-section-title">⌨️ Keyboard Shortcuts & Widget Controls</h4>
+            <div class="shortcuts-grid">
+              <div class="shortcut-row">
+                <kbd>Esc</kbd>
+                <span>Close any open modal or drawer</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>R</kbd>
+                <span>Refresh and test connection</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>📌 Pin</kbd>
+                <span>Keep Pulse floating above code editors and windows</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>⤢ Mini-Dock</kbd>
+                <span>Switch to minimal floating status bar (390×100px)</span>
+              </div>
+              <div class="shortcut-row">
+                <kbd>🔍 Discover</kbd>
+                <span>Probe live models active on your account from AgentRouter</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer help-modal-footer">
+          <div class="help-footer-links">
+            <a href="https://agentrouter.org" target="_blank" class="footer-link">🔗 AgentRouter.org</a>
+            <a href="https://ps.air-outer.com/console/token" target="_blank" class="footer-link">🔑 Token Console</a>
+          </div>
+          <button class="btn-primary" id="btnHelpDone">Done</button>
         </div>
       </div>
     </div>

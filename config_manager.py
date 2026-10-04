@@ -5,11 +5,60 @@ Persists API key, base URL, refresh rates, model preferences, and widget setting
 
 import json
 import os
+import sys
 import threading
 import time
 from typing import Dict, Any
 
-CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+
+def get_config_path() -> str:
+    """
+    Determines the persistent configuration file path.
+    When frozen as a single-file executable:
+      1. Uses config.json located next to sys.executable if writable (portable app mode).
+      2. If directory is not writable (e.g. Program Files), falls back to %APPDATA%/Pulse/config.json.
+    When running from source:
+      Uses config.json in the script's directory.
+    """
+    if getattr(sys, "frozen", False):
+        exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+        portable_path = os.path.join(exe_dir, "config.json")
+        if os.path.exists(portable_path):
+            return portable_path
+        # Test writability of exe_dir
+        try:
+            test_file = os.path.join(exe_dir, f".write_test_{os.getpid()}.tmp")
+            with open(test_file, "w") as f:
+                f.write("test")
+            os.remove(test_file)
+            return portable_path
+        except (PermissionError, OSError):
+            appdata = os.getenv("APPDATA") or os.path.expanduser("~")
+            pulse_dir = os.path.join(appdata, "Pulse")
+            try:
+                os.makedirs(pulse_dir, exist_ok=True)
+                return os.path.join(pulse_dir, "config.json")
+            except Exception:
+                return portable_path
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+
+
+def get_template_config() -> Dict[str, Any]:
+    """Reads default config from bundled config.example.json if present."""
+    bundle_dir = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    template_path = os.path.join(bundle_dir, "config.example.json")
+    if os.path.exists(template_path):
+        try:
+            with open(template_path, "r", encoding="utf-8") as f:
+                saved = json.load(f)
+                if isinstance(saved, dict):
+                    return saved
+        except Exception:
+            pass
+    return {}
+
+
+CONFIG_FILE = get_config_path()
 _CONFIG_LOCK = threading.RLock()
 
 DEFAULT_CONFIG: Dict[str, Any] = {
@@ -41,6 +90,9 @@ def load_config() -> Dict[str, Any]:
     """Loads configuration from config.json or returns default configuration in a thread-safe manner."""
     with _CONFIG_LOCK:
         cfg = dict(DEFAULT_CONFIG)
+        template = get_template_config()
+        if template:
+            cfg.update(template)
         if os.path.exists(CONFIG_FILE):
             try:
                 with open(CONFIG_FILE, "r", encoding="utf-8") as f:
@@ -59,6 +111,13 @@ def save_config(updates: Dict[str, Any]) -> Dict[str, Any]:
         cfg = load_config()
         for k, v in updates.items():
             cfg[k] = v
+
+        parent_dir = os.path.dirname(CONFIG_FILE)
+        if parent_dir and not os.path.exists(parent_dir):
+            try:
+                os.makedirs(parent_dir, exist_ok=True)
+            except Exception:
+                pass
 
         temp_file = CONFIG_FILE + f".tmp.{os.getpid()}_{threading.get_ident()}"
         try:

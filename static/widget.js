@@ -26,6 +26,7 @@
     isCompact: false,
     isPinned: true,
     soundEnabled: true,
+    activeModelFilter: 'all',
     models: []
   };
 
@@ -40,6 +41,8 @@
     btnPin: document.getElementById('btnPin'),
     btnCompact: document.getElementById('btnCompact'),
     btnSettings: document.getElementById('btnSettings'),
+    btnHelp: document.getElementById('btnHelp'),
+    btnMinimize: document.getElementById('btnMinimize'),
     btnClose: document.getElementById('btnClose'),
 
     // Compact View
@@ -120,25 +123,45 @@
     settingAlwaysOnTop: document.getElementById('settingAlwaysOnTop'),
     settingChime: document.getElementById('settingChime'),
     btnCloseSettingsModal: document.getElementById('btnCloseSettingsModal'),
-    btnModalClose: document.getElementById('btnModalClose')
+    btnModalClose: document.getElementById('btnModalClose'),
+
+    // Help Modal
+    helpModal: document.getElementById('helpModal'),
+    btnCloseHelpModal: document.getElementById('btnCloseHelpModal'),
+    btnHelpDone: document.getElementById('btnHelpDone')
   };
 
-  // Helper: Play Web Audio Notification Chime
+  // Helper: Resilient Web Audio Notification Chime with Autoplay Unlocking
+  let audioCtx = null;
+  function getAudioContext() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        audioCtx = new AudioContextClass();
+      }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+    return audioCtx;
+  }
+
   function playChime() {
     if (!state.soundEnabled) return;
     try {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-      osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5
-      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
       osc.connect(gain);
-      gain.connect(audioCtx.destination);
+      gain.connect(ctx.destination);
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.35);
+      osc.stop(ctx.currentTime + 0.35);
     } catch (e) {
       console.warn('Audio play error:', e);
     }
@@ -206,7 +229,13 @@
     el.btnCompact.addEventListener('click', toggleCompactMode);
     el.btnCompactExpand.addEventListener('click', toggleCompactMode);
     el.btnPin.addEventListener('click', toggleAlwaysOnTop);
+    if (el.btnMinimize) el.btnMinimize.addEventListener('click', minimizeWindow);
     el.btnClose.addEventListener('click', closeWindow);
+
+    // Help Modal
+    if (el.btnHelp) el.btnHelp.addEventListener('click', openHelpModal);
+    if (el.btnCloseHelpModal) el.btnCloseHelpModal.addEventListener('click', closeHelpModal);
+    if (el.btnHelpDone) el.btnHelpDone.addEventListener('click', closeHelpModal);
 
     // Auto-refresh & Sound
     el.chkAutoRefresh.addEventListener('change', (e) => {
@@ -233,6 +262,13 @@
       saveConfigToServer({ base_url: state.baseUrl });
     });
     el.settingTimezone.addEventListener('change', onTimezoneSettingChange);
+
+    // Interactive UI components
+    setupHelpTabs();
+    setupModelFilterChips();
+    setupKeyboardShortcuts();
+    setupExternalLinks();
+    setupAudioUnlocking();
   }
 
   // --- Load Initial Data ---
@@ -799,7 +835,21 @@
 
     el.modelsCount.textContent = `${state.models.length} models`;
 
-    state.models.forEach(m => {
+    let filtered = state.models;
+    if (state.activeModelFilter === 'active') {
+      filtered = state.models.filter(m => m.status_type === 'active');
+    } else if (state.activeModelFilter === 'uninterrupted') {
+      filtered = state.models.filter(m => !m.quota_limited);
+    } else if (state.activeModelFilter === 'quota') {
+      filtered = state.models.filter(m => m.quota_limited);
+    }
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="overview-loading">No models matching '${state.activeModelFilter}'</div>`;
+      return;
+    }
+
+    filtered.forEach(m => {
       const row = document.createElement('div');
       row.className = 'model-row-item';
       row.style.cursor = 'pointer';
@@ -986,6 +1036,88 @@
       // Browser preview: minimize or hide
       el.container.style.opacity = '0.5';
     }
+  }
+
+  function minimizeWindow() {
+    if (window.pywebview && window.pywebview.api && window.pywebview.api.minimize_window) {
+      window.pywebview.api.minimize_window();
+    }
+  }
+
+  // --- Help Modal ---
+  function openHelpModal() {
+    if (el.helpModal) el.helpModal.style.display = 'flex';
+  }
+
+  function closeHelpModal() {
+    if (el.helpModal) el.helpModal.style.display = 'none';
+  }
+
+  function setupHelpTabs() {
+    const tabButtons = document.querySelectorAll('.help-tab-btn');
+    const tabContents = document.querySelectorAll('.help-tab-content');
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabButtons.forEach(b => b.classList.remove('active'));
+        tabContents.forEach(c => c.style.display = 'none');
+        btn.classList.add('active');
+        const targetId = btn.getAttribute('data-tab');
+        const target = document.getElementById(targetId);
+        if (target) {
+          target.style.display = 'block';
+        }
+      });
+    });
+  }
+
+  function setupModelFilterChips() {
+    const chips = document.querySelectorAll('#modelsFilterBar .filter-chip');
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        state.activeModelFilter = chip.getAttribute('data-filter') || 'all';
+        renderModelsOverview();
+      });
+    });
+  }
+
+  function setupKeyboardShortcuts() {
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (el.helpModal && el.helpModal.style.display === 'flex') {
+          closeHelpModal();
+        } else if (el.settingsModal && el.settingsModal.style.display === 'flex') {
+          closeSettingsModal();
+        } else if (el.keyDrawer && el.keyDrawer.style.display === 'block') {
+          el.keyDrawer.style.display = 'none';
+        }
+      } else if ((e.key === 'r' || e.key === 'R') && !['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        testConnection(true);
+      }
+    });
+  }
+
+  function setupExternalLinks() {
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a[target="_blank"]');
+      if (link && link.href) {
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.open_external_url) {
+          e.preventDefault();
+          window.pywebview.api.open_external_url(link.href);
+        }
+      }
+    });
+  }
+
+  function setupAudioUnlocking() {
+    const unlock = () => {
+      getAudioContext();
+      document.removeEventListener('pointerdown', unlock);
+      document.removeEventListener('keydown', unlock);
+    };
+    document.addEventListener('pointerdown', unlock);
+    document.addEventListener('keydown', unlock);
   }
 
   // --- Settings Modal ---

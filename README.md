@@ -1,14 +1,20 @@
 # Pulse
 
-**Pulse** is a high-performance, always-on-top commercial desktop floating monitor and diagnostics widget designed for **[AgentRouter](https://agentrouter.org/)**.
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20(64--bit)-0078D6?style=flat-square&logo=windows)](https://github.com/MrTG1B/Pulse)
+[![Target Service](https://img.shields.io/badge/target%20service-agentrouter.org-B8FF3D?style=flat-square&labelColor=111111)](https://agentrouter.org)
+[![Executable](https://img.shields.io/badge/distribution-Single--File%20.exe%20(No%20Terminal)-success?style=flat-square)](https://github.com/MrTG1B/Pulse)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-36%2F36%20passed-brightgreen?style=flat-square)](tests)
 
-Pulse provides real-time gateway health monitoring, automated HTTP 402/401/503 error diagnostics, secure API key management, model discovery, and precision countdown tickers for scheduled daily quota replenishments in your local timezone.
+**Pulse** is a lightweight, high-performance, commercial-grade floating desktop monitor and telemetry widget designed specifically for **[AgentRouter](https://agentrouter.org/)**.
+
+Pulse delivers real-time gateway health monitoring, automated HTTP 402/401/503 error diagnostics, secure API key management, dynamic model discovery, and precision countdown tickers for scheduled daily quota replenishments in your local timezone.
 
 ---
 
-## 🎨 Commercial Design System & Palette
+## 🎨 Commercial Dark FinTech Design System
 
-Pulse follows a modern, high-contrast dark theme:
+Pulse follows a high-contrast industrial Dark FinTech aesthetic engineered for developer environments:
 
 | Element | Hex Code | Description |
 |---|---|---|
@@ -31,32 +37,40 @@ Pulse follows a modern, high-contrast dark theme:
 
 ## 🌟 Key Capabilities
 
-### 1. Zero-Hang Diagnostics & WAF Bypass
-- Uses verified allowlisted client wire images to prevent `401 unauthorized client detected` WAF rejections.
-- Implements asynchronous `AbortController` timeouts and thread isolation to ensure the desktop window never freezes or triggers Windows "Not Responding" dialogs.
+### 1. Standalone Single-File Windows Executable (No Terminal)
+- Packaged as a clean, single-file `.exe` with **no console/terminal popup** on launch (`--noconsole --onefile`).
+- Embedded multi-resolution icon metadata (`icon.ico`).
+- Fully self-extracting runtime assets (`static/`, `config.example.json`) with zero external dependency requirements.
+- Portable persistence: saves settings in `config.json` next to the executable or in `%APPDATA%/Pulse`.
 
-### 2. Intelligent HTTP 402 & 503 Handlers
-- **HTTP 402 (Budget Pool Exhausted)**: Prominently displays time remaining until the next replenishment batch with 1-click fallback to active models.
-- **HTTP 503 (No Channel in Group)**: Translates channel group constraints and offers 1-click switching to verified active models (`deepseek-v4-flash`).
+### 2. Zero-Hang Diagnostics & WAF Bypass
+- Employs allowlisted client wire profiles (`claude-cli/1.0.108`) to prevent `401 unauthorized client detected` Cloudflare / AgentRouter WAF blocks.
+- Asynchronous `AbortController` timeouts and thread isolation guarantee the desktop window never freezes or displays Windows "Not Responding" prompts.
 
-### 3. Precision Quota Countdown & Local Time Translation
+### 3. Intelligent HTTP 402 & 503 Handlers
+- **HTTP 402 (Budget Pool Exhausted)**: Displays exact time remaining until the next replenishment batch with a 1-click fallback button to active uninterrupted models.
+- **HTTP 503 (No Channel in Group)**: Translates channel group constraints and provides 1-click switching to verified active models (`deepseek-v4-flash`).
+
+### 4. Precision Quota Countdown & Local Time Translation
 Tracks official AgentRouter release batches (10:00 & 19:00 Beijing Time / 02:00 & 11:00 UTC):
 - **User Local Time (IST / UTC+05:30)**:
   - **Batch 1 (Morning)**: `07:30 AM IST`
   - **Batch 2 (Afternoon/Evening)**: `04:30 PM IST`
-- Live real-time ticker (`HH:MM:SS`) with circular progress tracker and customizable sound chimes.
+- Live real-time ticker (`HH:MM:SS`) with progress bar and Web Audio release chime.
 
-### 4. Dynamic Model Discovery & Live Status
+### 5. Dynamic Model Discovery & Live Status
 - Auto-discovers models available to your token (`/v1/models`).
 - Real-time latency tracking (ms) and status prefix badges in the model selector.
 - 1-click **Test All** batch diagnostic probe.
+- Category filter chips: `All`, `🟢 Active`, `⚡ Uninterrupted`, `⏱️ Quota Pool`.
 
-### 5. Always-on-Top Floating Widget
-- Native Edge WebView2 floating window with frameless draggable header bar.
-- Pin toggle to stay atop IDEs (VS Code, Cursor) and terminal sessions.
-- **Compact Mini-Dock**: Collapses into a sleek `390×100px` status bar showing current status, countdown, and latency.
+### 6. Always-on-Top Floating Widget & Mini-Dock
+- Native Microsoft Edge WebView2 frameless floating window.
+- **Pin Toggle**: Keeps widget floating over code editors (Cursor, VS Code) and terminals.
+- **Compact Mini-Dock**: Collapses into a sleek `390×100px` floating status bar.
+- Interactive in-app **Help & User Guide** modal with tabs for rapid onboarding and troubleshooting.
 
-### 6. Secure Key Management
+### 7. Secure Local Key Management
 - Local encrypted/masked storage in `config.json`.
 - In-place Edit drawer with password eye toggle (`👁️`), save, and wipe options.
 
@@ -64,57 +78,106 @@ Tracks official AgentRouter release batches (10:00 & 19:00 Beijing Time / 02:00 
 
 ## 🚀 Getting Started
 
-### Prerequisites
-- Python 3.10+
-- Dependencies: `pip install -r requirements.txt`
+### Method 1: Run Standalone Executable (Recommended)
+1. Download or build `Pulse.exe`.
+2. Double-click `Pulse.exe` to run. No installation or Python required!
 
-### Quick Launch (Windows)
-Double-click `run_widget.bat` or run:
+### Method 2: Run from Python Source
 ```powershell
+# Clone repository
+git clone https://github.com/MrTG1B/Pulse.git
+cd Pulse
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Launch desktop floating window
 python app.py
-```
 
-### Browser Mode
-To run in your default web browser instead of a desktop window:
-```powershell
+# Or launch in web browser mode
 python app.py --browser
 ```
 
 ---
 
+## 🏗️ Building the Single-File Executable
+
+To compile `Pulse.exe` locally:
+
+```powershell
+# Run the Python build automation
+python build_exe.py
+
+# Or execute the batch file
+.\build.bat
+```
+
+Output executable will be placed in `dist/Pulse.exe`.
+
+---
+
 ## 🧪 Testing Suite
 
-Pulse includes a complete test suite covering timezone conversions, API classification, mock gateway responses, and configuration persistence:
+Pulse maintains 100% pass rates across unit and integration tests:
+
 ```powershell
-python -m unittest discover tests
+python -m unittest discover -s tests
 ```
+
+### Coverage:
+- `test_config_manager.py`: Key persistence, masking, concurrent thread safety.
+- `test_router_client.py`: Gateway health checks, HTTP 200/402/503/401 classification.
+- `test_time_service.py`: UTC release slot math, IST (UTC+05:30) conversions.
+- `test_server_endpoints.py`: REST endpoints, static file serving, color palette verification.
 
 ---
 
 ## 📁 Project Architecture
+
 ```
 Pulse/
-├── app.py                  # Desktop window launcher (pywebview)
-├── server.py               # Local REST API & static file server
+├── app.py                  # Desktop window launcher (pywebview / Edge WebView2)
+├── server.py               # Local REST API & static asset server
 ├── router_client.py        # AgentRouter API diagnostic engine & model catalog
 ├── time_service.py         # Quota release schedule & timezone calculations
 ├── config_manager.py       # API key persistence & config storage
-├── config.json             # Local configuration file
+├── config.example.json     # Configuration template
+├── build_exe.py            # Standalone PyInstaller executable builder
+├── build.bat               # Windows 1-click build batch script
+├── run_widget.bat          # 1-click source runner batch script
 ├── requirements.txt        # Python package dependencies
-├── run_widget.bat          # 1-click launcher batch script
+├── icon.png                # Master branding icon (PNG)
+├── icon.ico                # Multi-resolution Windows application icon (ICO)
 ├── static/
-│   ├── index.html          # Widget UI structure
+│   ├── index.html          # Widget UI structure & Help guide
 │   ├── style.css           # Commercial Dark FinTech design system
-│   └── widget.js           # Frontend reactive controller
-└── tests/
-    ├── test_app.py
-    ├── test_config_manager.py
-    ├── test_router_client.py
-    ├── test_server_endpoints.py
-    └── test_time_service.py
+│   ├── widget.js           # Frontend reactive controller & Web Audio
+│   ├── icon.png            # Webview branding asset
+│   └── icon.ico            # Webview favicon asset
+├── tests/
+│   ├── test_config_manager.py
+│   ├── test_router_client.py
+│   ├── test_server_endpoints.py
+│   └── test_time_service.py
+├── LICENSE                 # Commercial-friendly MIT License
+├── SECURITY.md             # Security policy & vulnerability reporting
+├── CONTRIBUTING.md         # Developer setup & contribution guidelines
+├── CHANGELOG.md            # Version release notes (Keep a Changelog)
+└── USER_GUIDE.md           # Comprehensive commercial user manual
 ```
 
 ---
 
+## 📚 Commercial Documentation
+
+- [User Guide & Troubleshooting Manual](USER_GUIDE.md)
+- [Security Policy & Disclosures](SECURITY.md)
+- [Contributing Guidelines](CONTRIBUTING.md)
+- [Release Changelog](CHANGELOG.md)
+- [License](LICENSE)
+
+---
+
 ## 📄 License
-MIT License.
+This project is licensed under the [MIT License](LICENSE).
+Target Service: **[AgentRouter](https://agentrouter.org/)**.

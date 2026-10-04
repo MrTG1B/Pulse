@@ -12,8 +12,12 @@ import threading
 import webbrowser
 import argparse
 
-# Ensure standard output and error never crash with UnicodeEncodeError on Windows
+# Ensure standard output and error never crash with UnicodeEncodeError or NoneType in --noconsole mode
 if sys.platform == "win32":
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w", encoding="utf-8")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w", encoding="utf-8")
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
@@ -91,6 +95,15 @@ class DesktopApi:
                 pass
         return False
 
+    def open_external_url(self, url: str):
+        try:
+            if url and (url.startswith("http://") or url.startswith("https://")):
+                webbrowser.open(url)
+                return True
+        except Exception:
+            pass
+        return False
+
 
 def start_server_thread(port: int):
     """Runs the backend HTTP server in a background thread."""
@@ -137,10 +150,12 @@ def main():
             url=widget_url,
             width=410,
             height=680,
+            min_size=(360, 90),
             resizable=True,
             frameless=True,
             on_top=always_on_top,
             easy_drag=False,
+            background_color="#0A0A0A",
             js_api=api
         )
         window_holder["window"] = window

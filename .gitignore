@@ -1,9 +1,25 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 *.tmp*
 config.json.tmp*
+
+# Local configuration with private user API keys
 config.json
+
+# PyInstaller build artifacts & distribution
+build/
+dist/
+*.spec
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Editor & IDE artifacts
 .vscode/
 .idea/
 .pytest_cache/
+*.log

@@ -12,8 +12,12 @@ from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from typing import Optional
 
-# Ensure standard output and error never crash with UnicodeEncodeError on Windows
+# Ensure standard output and error never crash with UnicodeEncodeError or NoneType in --noconsole mode
 if sys.platform == "win32":
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w", encoding="utf-8")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w", encoding="utf-8")
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
         sys.stderr.reconfigure(encoding="utf-8", errors="replace")
@@ -24,7 +28,15 @@ import config_manager
 import time_service
 import router_client
 
-STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+
+def get_bundle_dir() -> str:
+    """Returns base directory for bundled assets, supporting PyInstaller onefile."""
+    if getattr(sys, "frozen", False):
+        return getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+STATIC_DIR = os.path.join(get_bundle_dir(), "static")
 
 
 class AgentRouterRequestHandler(BaseHTTPRequestHandler):
@@ -32,11 +44,14 @@ class AgentRouterRequestHandler(BaseHTTPRequestHandler):
     timeout = 10  # Prevent zombie sockets on Windows
 
     def log_message(self, format, *args):
-        """Suppress noisy request logs, print errors safely without Unicode errors."""
+        """Suppress noisy request logs, print errors safely without Unicode or NoneType errors."""
         try:
-            if args and str(args[1]).startswith(('4', '5')):
+            if sys.stderr and args and str(args[1]).startswith(('4', '5')):
                 msg = "%s - - [%s] %s\n" % (self.address_string(), self.log_date_time_string(), format % args)
-                sys.stderr.buffer.write(msg.encode('utf-8', errors='replace'))
+                if hasattr(sys.stderr, 'buffer'):
+                    sys.stderr.buffer.write(msg.encode('utf-8', errors='replace'))
+                else:
+                    sys.stderr.write(msg)
                 sys.stderr.flush()
         except Exception:
             pass
@@ -124,8 +139,10 @@ class AgentRouterRequestHandler(BaseHTTPRequestHandler):
         # Static File Routes
         if path in ("/", "/index.html"):
             file_path = os.path.join(STATIC_DIR, "index.html")
-        elif path == "/favicon.ico":
-            file_path = os.path.join(STATIC_DIR, "icon.png")
+        elif path in ("/favicon.ico", "/icon.ico"):
+            file_path = os.path.join(STATIC_DIR, "icon.ico")
+            if not os.path.isfile(file_path):
+                file_path = os.path.join(STATIC_DIR, "icon.png")
         else:
             rel_path = path.lstrip("/").replace("/", os.sep)
             file_path = os.path.join(STATIC_DIR, rel_path)
