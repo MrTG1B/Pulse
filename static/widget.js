@@ -62,7 +62,6 @@
     apiKeyStrip: document.getElementById('apiKeyStrip'),
     keyDisplayValue: document.getElementById('keyDisplayValue'),
     btnEditKey: document.getElementById('btnEditKey'),
-    btnToggleKeyMask: document.getElementById('btnToggleKeyMask'),
     keyDrawer: document.getElementById('keyDrawer'),
     inputApiKey: document.getElementById('inputApiKey'),
     btnInputEye: document.getElementById('btnInputEye'),
@@ -165,12 +164,37 @@
 
   // --- Initializer ---
   async function init() {
-    setupEventListeners();
-    computeLocalSchedule(); // Calculate schedule immediately for 0ms visual rendering
-    startCountdownLoop();
-    startElapsedTimer();
-    await loadInitialData();
-    startAutoRefresh();
+    try {
+      setupEventListeners();
+    } catch (e) {
+      console.error('setupEventListeners error:', e);
+    }
+    try {
+      if (el.btnPin) el.btnPin.classList.toggle('active', state.isPinned);
+      computeLocalSchedule(); // Calculate schedule immediately for 0ms visual rendering
+    } catch (e) {
+      console.error('computeLocalSchedule error:', e);
+    }
+    try {
+      startCountdownLoop();
+    } catch (e) {
+      console.error('startCountdownLoop error:', e);
+    }
+    try {
+      startElapsedTimer();
+    } catch (e) {
+      console.error('startElapsedTimer error:', e);
+    }
+    try {
+      await loadInitialData();
+    } catch (e) {
+      console.error('loadInitialData error:', e);
+    }
+    try {
+      startAutoRefresh();
+    } catch (e) {
+      console.error('startAutoRefresh error:', e);
+    }
   }
 
   // --- Event Listeners ---
@@ -181,20 +205,22 @@
     });
 
     // API Key Interactions
-    el.btnEditKey.addEventListener('click', toggleKeyDrawer);
+    if (el.btnEditKey) el.btnEditKey.addEventListener('click', toggleKeyDrawer);
     const keyStripLeft = document.getElementById('keyStripLeft');
     if (keyStripLeft) keyStripLeft.addEventListener('click', toggleKeyDrawer);
-    el.btnCloseKeyDrawer.addEventListener('click', () => el.keyDrawer.style.display = 'none');
+    if (el.btnCloseKeyDrawer) el.btnCloseKeyDrawer.addEventListener('click', () => el.keyDrawer.style.display = 'none');
     if (el.btnCancelEditKey) el.btnCancelEditKey.addEventListener('click', () => el.keyDrawer.style.display = 'none');
     if (el.btnInputEye) el.btnInputEye.addEventListener('click', toggleInputEye);
-    el.btnSaveKey.addEventListener('click', saveApiKey);
-    el.btnClearKey.addEventListener('click', clearApiKey);
-    el.btnToggleKeyMask.addEventListener('click', toggleKeyMaskDisplay);
+    if (el.btnSaveKey) el.btnSaveKey.addEventListener('click', saveApiKey);
+    if (el.btnClearKey) el.btnClearKey.addEventListener('click', clearApiKey);
+    if (el.btnToggleKeyMask) el.btnToggleKeyMask.addEventListener('click', toggleKeyMaskDisplay);
 
     // Enter key to submit API keys
-    el.inputApiKey.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') saveApiKey();
-    });
+    if (el.inputApiKey) {
+      el.inputApiKey.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') saveApiKey();
+      });
+    }
     if (el.settingApiKey) {
       el.settingApiKey.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') saveModalApiKey();
@@ -202,27 +228,30 @@
     }
 
     // Testing & Discovery
-    el.btnTestConnection.addEventListener('click', () => testConnection(true));
-    el.btnTestAllModels.addEventListener('click', testAllModels);
+    if (el.btnTestConnection) el.btnTestConnection.addEventListener('click', () => testConnection(true));
+    if (el.btnTestAllModels) el.btnTestAllModels.addEventListener('click', testAllModels);
     if (el.btnDiscoverModels) el.btnDiscoverModels.addEventListener('click', discoverModels);
-    el.btnCompactRefresh.addEventListener('click', () => testConnection(true));
+    if (el.btnCompactRefresh) el.btnCompactRefresh.addEventListener('click', () => testConnection(true));
 
     // Model Change
-    el.modelSelect.addEventListener('change', onModelSelected);
+    if (el.modelSelect) el.modelSelect.addEventListener('change', onModelSelected);
     if (el.btnSwitchDeepSeek) {
       el.btnSwitchDeepSeek.addEventListener('click', () => {
         const targetId = 'deepseek-v4-flash';
-        el.modelSelect.value = targetId;
+        if (el.modelSelect) el.modelSelect.value = targetId;
         onModelSelected();
       });
     }
 
     // Window Controls
-    el.btnCompact.addEventListener('click', toggleCompactMode);
-    el.btnCompactExpand.addEventListener('click', toggleCompactMode);
-    el.btnPin.addEventListener('click', toggleAlwaysOnTop);
+    if (el.btnCompact) el.btnCompact.addEventListener('click', toggleCompactMode);
+    if (el.btnCompactExpand) el.btnCompactExpand.addEventListener('click', toggleCompactMode);
+    if (el.btnPin) {
+      el.btnPin.classList.toggle('active', state.isPinned);
+      el.btnPin.addEventListener('click', toggleAlwaysOnTop);
+    }
     if (el.btnMinimize) el.btnMinimize.addEventListener('click', minimizeWindow);
-    el.btnClose.addEventListener('click', closeWindow);
+    if (el.btnClose) el.btnClose.addEventListener('click', closeWindow);
 
     // Help Modal
     if (el.btnHelp) el.btnHelp.addEventListener('click', openHelpModal);
@@ -230,36 +259,44 @@
     if (el.btnHelpDone) el.btnHelpDone.addEventListener('click', closeHelpModal);
 
     // Auto-refresh & Sound
-    el.chkAutoRefresh.addEventListener('change', (e) => {
-      state.autoRefresh = e.target.checked;
-      restartAutoRefresh();
-    });
-    el.selInterval.addEventListener('change', (e) => {
-      state.refreshInterval = parseInt(e.target.value, 10);
-      restartAutoRefresh();
-    });
-    el.btnSoundToggle.addEventListener('click', () => {
-      state.soundEnabled = !state.soundEnabled;
-      el.soundIcon.textContent = state.soundEnabled ? '🔔' : '🔕';
-      if (el.settingChime) el.settingChime.checked = state.soundEnabled;
-      saveConfigToServer({ sound_alert_enabled: state.soundEnabled });
-      if (state.soundEnabled) playChime();
-    });
+    if (el.chkAutoRefresh) {
+      el.chkAutoRefresh.addEventListener('change', (e) => {
+        state.autoRefresh = e.target.checked;
+        restartAutoRefresh();
+      });
+    }
+    if (el.selInterval) {
+      el.selInterval.addEventListener('change', (e) => {
+        state.refreshInterval = parseInt(e.target.value, 10);
+        restartAutoRefresh();
+      });
+    }
+    if (el.btnSoundToggle) {
+      el.btnSoundToggle.addEventListener('click', () => {
+        state.soundEnabled = !state.soundEnabled;
+        if (el.soundIcon) el.soundIcon.textContent = state.soundEnabled ? '🔔' : '🔕';
+        if (el.settingChime) el.settingChime.checked = state.soundEnabled;
+        saveConfigToServer({ sound_alert_enabled: state.soundEnabled });
+        if (state.soundEnabled) playChime();
+      });
+    }
 
     // Settings Modal
-    el.btnSettings.addEventListener('click', openSettingsModal);
-    el.btnCloseSettingsModal.addEventListener('click', closeSettingsModal);
-    el.btnModalClose.addEventListener('click', closeSettingsModal);
-    el.btnModalSaveKey.addEventListener('click', saveModalApiKey);
-    el.settingBaseUrl.addEventListener('change', (e) => {
-      state.baseUrl = e.target.value;
-      saveConfigToServer({ base_url: state.baseUrl });
-    });
-    el.settingTimezone.addEventListener('change', onTimezoneSettingChange);
+    if (el.btnSettings) el.btnSettings.addEventListener('click', openSettingsModal);
+    if (el.btnCloseSettingsModal) el.btnCloseSettingsModal.addEventListener('click', closeSettingsModal);
+    if (el.btnModalClose) el.btnModalClose.addEventListener('click', closeSettingsModal);
+    if (el.btnModalSaveKey) el.btnModalSaveKey.addEventListener('click', saveModalApiKey);
+    if (el.settingBaseUrl) {
+      el.settingBaseUrl.addEventListener('change', (e) => {
+        state.baseUrl = e.target.value;
+        saveConfigToServer({ base_url: state.baseUrl });
+      });
+    }
+    if (el.settingTimezone) el.settingTimezone.addEventListener('change', onTimezoneSettingChange);
     if (el.settingAlwaysOnTop) {
       el.settingAlwaysOnTop.addEventListener('change', (e) => {
         state.isPinned = e.target.checked;
-        el.btnPin.classList.toggle('active', state.isPinned);
+        if (el.btnPin) el.btnPin.classList.toggle('active', state.isPinned);
         saveConfigToServer({ always_on_top: state.isPinned });
         if (window.pywebview && window.pywebview.api && window.pywebview.api.toggle_always_on_top) {
           window.pywebview.api.toggle_always_on_top(state.isPinned);
@@ -269,7 +306,7 @@
     if (el.settingChime) {
       el.settingChime.addEventListener('change', (e) => {
         state.soundEnabled = e.target.checked;
-        el.soundIcon.textContent = state.soundEnabled ? '🔔' : '🔕';
+        if (el.soundIcon) el.soundIcon.textContent = state.soundEnabled ? '🔔' : '🔕';
         saveConfigToServer({ sound_alert_enabled: state.soundEnabled });
         if (state.soundEnabled) playChime();
       });
@@ -464,18 +501,31 @@
 
   // --- Schedule & Countdown (Core Requirement) ---
   function updateScheduleData(schedule) {
+    if (!schedule) return;
     state.currentSchedule = schedule;
     state.nextSlotUtc = new Date(schedule.next_slot_utc);
     state.prevSlotUtc = new Date(schedule.prev_slot_utc);
-    state.userOffsetMinutes = schedule.user_offset_minutes;
+    if (schedule.user_offset_minutes !== undefined) {
+      state.userOffsetMinutes = schedule.user_offset_minutes;
+    }
 
-    el.batchPill.textContent = `Batch ${schedule.batch_number}`;
-    el.localTimeDisplay.textContent = schedule.local_display;
-    if (el.beijingRefTime) el.beijingRefTime.textContent = `Beijing: ${schedule.daily_schedule_beijing}`;
-    if (el.utcRefTime) el.utcRefTime.textContent = schedule.daily_schedule_utc;
-    if (el.dailyScheduleTimes) el.dailyScheduleTimes.textContent = schedule.daily_schedule_local;
+    if (el.batchPill && schedule.batch_number) {
+      el.batchPill.textContent = `Batch ${schedule.batch_number}`;
+    }
+    if (el.localTimeDisplay && schedule.local_display) {
+      el.localTimeDisplay.textContent = schedule.local_display;
+    }
+    if (el.beijingRefTime && schedule.daily_schedule_beijing) {
+      el.beijingRefTime.textContent = `Beijing: ${schedule.daily_schedule_beijing}`;
+    }
+    if (el.utcRefTime && schedule.daily_schedule_utc) {
+      el.utcRefTime.textContent = schedule.daily_schedule_utc;
+    }
+    if (el.dailyScheduleTimes && schedule.daily_schedule_local) {
+      el.dailyScheduleTimes.textContent = schedule.daily_schedule_local;
+    }
 
-    if (el.compactLocalTime) {
+    if (el.compactLocalTime && schedule.local_time) {
       const tz = schedule.user_timezone || 'IST';
       el.compactLocalTime.textContent = `(${schedule.local_time} ${tz})`;
     }
@@ -502,18 +552,28 @@
     }
     candidates.sort((a, b) => a - b);
 
-    const nextSlot = candidates.find(c => c > now);
+    const nextSlot = candidates.find(c => c > now) || new Date(now.getTime() + 4 * 3600 * 1000);
     const pastSlots = candidates.filter(c => c <= now);
     const prevSlot = pastSlots[pastSlots.length - 1] || new Date(nextSlot.getTime() - 9 * 3600 * 1000);
 
     state.nextSlotUtc = nextSlot;
     state.prevSlotUtc = prevSlot;
 
+    if (el.batchPill) {
+      const isMorning = nextSlot.getUTCHours() === 2;
+      el.batchPill.textContent = isMorning ? 'Batch 1' : 'Batch 2';
+    }
+    if (el.beijingRefTime) el.beijingRefTime.textContent = 'Beijing: 10:00 & 19:00 (Beijing Time / UTC+8)';
+    if (el.utcRefTime) el.utcRefTime.textContent = '02:00 & 11:00 UTC';
+    if (el.dailyScheduleTimes) el.dailyScheduleTimes.textContent = '07:30 AM & 04:30 PM (IST)';
+
     // Format local time for user's timezone (UTC+05:30)
     formatLocalTimeDisplay(nextSlot);
+    tickCountdown();
   }
 
   function formatLocalTimeDisplay(dateUtc) {
+    if (!dateUtc) return;
     const offsetMs = state.userOffsetMinutes * 60 * 1000;
     const localDate = new Date(dateUtc.getTime() + offsetMs);
     const nowLocal = new Date(Date.now() + offsetMs);
@@ -527,9 +587,11 @@
     const minutes = String(localDate.getUTCMinutes()).padStart(2, '0');
     const ampm = hours >= 12 ? 'PM' : 'AM';
     const displayHours = hours % 12 || 12;
-    const tzLabel = state.userOffsetMinutes === 330 ? 'IST / UTC+05:30' : `UTC${state.userOffsetMinutes >= 0 ? '+' : '-'}${String(Math.floor(Math.abs(state.userOffsetMinutes)/60)).padStart(2,'0')}:${String(Math.abs(state.userOffsetMinutes)%60).padStart(2,'0')}`;
+    const tzLabel = state.userOffsetMinutes === 330 ? 'IST' : `UTC${state.userOffsetMinutes >= 0 ? '+' : '-'}${String(Math.floor(Math.abs(state.userOffsetMinutes)/60)).padStart(2,'0')}:${String(Math.abs(state.userOffsetMinutes)%60).padStart(2,'0')}`;
 
-    el.localTimeDisplay.textContent = `${dayStr}, ${String(displayHours).padStart(2, '0')}:${minutes} ${ampm} (${tzLabel})`;
+    if (el.localTimeDisplay) {
+      el.localTimeDisplay.textContent = `${dayStr}, ${String(displayHours).padStart(2, '0')}:${minutes} ${ampm} (${tzLabel})`;
+    }
     if (el.compactLocalTime) {
       el.compactLocalTime.textContent = `(${String(displayHours).padStart(2, '0')}:${minutes} ${ampm})`;
     }
@@ -567,17 +629,17 @@
     const mStr = String(mins).padStart(2, '0');
     const sStr = String(secs).padStart(2, '0');
 
-    el.cntHours.textContent = hStr;
-    el.cntMinutes.textContent = mStr;
-    el.cntSeconds.textContent = sStr;
+    if (el.cntHours) el.cntHours.textContent = hStr;
+    if (el.cntMinutes) el.cntMinutes.textContent = mStr;
+    if (el.cntSeconds) el.cntSeconds.textContent = sStr;
 
-    el.compactCountdown.textContent = `${hStr}:${mStr}:${sStr}`;
+    if (el.compactCountdown) el.compactCountdown.textContent = `${hStr}:${mStr}:${sStr}`;
     if (el.bannerCountdown) {
       el.bannerCountdown.textContent = `${hStr}h ${mStr}m ${sStr}s`;
     }
 
     // Cycle progress bar
-    if (state.prevSlotUtc) {
+    if (state.prevSlotUtc && el.cycleProgressBar) {
       const cycleTotal = target - state.prevSlotUtc.getTime();
       const elapsed = now - state.prevSlotUtc.getTime();
       const pct = Math.min(100, Math.max(0, (elapsed / cycleTotal) * 100));
@@ -1009,7 +1071,8 @@
 
   function toggleAlwaysOnTop() {
     state.isPinned = !state.isPinned;
-    el.btnPin.classList.toggle('active', state.isPinned);
+    if (el.btnPin) el.btnPin.classList.toggle('active', state.isPinned);
+    if (el.settingAlwaysOnTop) el.settingAlwaysOnTop.checked = state.isPinned;
     saveConfigToServer({ always_on_top: state.isPinned });
 
     if (window.pywebview && window.pywebview.api && window.pywebview.api.toggle_always_on_top) {

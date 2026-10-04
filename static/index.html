@@ -22,7 +22,7 @@
       </div>
 
       <div class="window-controls no-drag">
-        <button class="icon-btn" id="btnPin" title="Always on Top (Toggle Pin)">
+        <button class="icon-btn active" id="btnPin" title="Always on Top (Toggle Pin)">
           <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 17v5M9 2h6l-1 5h3l-3 7H9l-3-7h3L8 2z"/></svg>
         </button>
         <button class="icon-btn" id="btnCompact" title="Toggle Compact Mode">
@@ -155,15 +155,23 @@
           <div class="cycle-progress-bar" id="cycleProgressBar" style="width: 0%;"></div>
         </div>
 
-        <!-- Clean Local Time Notice -->
+        <!-- Clean Local Time Notice (User's context UTC+05:30) -->
         <div class="local-time-notice">
           <div class="local-time-main">
-            <span class="label">Next Window:</span>
+            <span class="label">When in My Local Time:</span>
             <span class="value" id="localTimeDisplay">Calculating...</span>
           </div>
-          <div class="local-time-sub">
-            <span class="schedule-times" id="dailyScheduleTimes">Drops: 07:30 AM & 04:30 PM (IST)</span>
+          <div class="ref-time-sub">
+            <span id="beijingRefTime">Beijing: 10:00 & 19:00 (Beijing Time / UTC+8)</span>
+            <span class="dot-divider">•</span>
+            <span id="utcRefTime">02:00 & 11:00 UTC</span>
           </div>
+        </div>
+
+        <!-- Daily Release Schedule Information -->
+        <div class="schedule-info-row">
+          <span class="schedule-tag">📅 Daily Drops:</span>
+          <span class="schedule-times" id="dailyScheduleTimes">07:30 AM & 04:30 PM (IST)</span>
         </div>
       </section>
 

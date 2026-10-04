@@ -888,9 +888,37 @@ summary,
   justify-content: flex-end;
 }
 
+.ref-time-sub {
+  font-size: 9.5px;
+  color: var(--text-muted);
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.dot-divider {
+  opacity: 0.5;
+}
+
+.schedule-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  padding: 4px 2px 0;
+  margin-top: 4px;
+  border-top: 1px dashed var(--border-subtle);
+}
+
+.schedule-tag {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 .schedule-times {
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 500;
 }
 
