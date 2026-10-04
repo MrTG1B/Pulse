@@ -1068,7 +1068,7 @@
       if (state.isCompact) {
         window.pywebview.api.resize_window(390, 100);
       } else {
-        window.pywebview.api.resize_window(410, 680);
+        window.pywebview.api.resize_window(410, 720);
       }
     }
   }

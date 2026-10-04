@@ -216,34 +216,20 @@
       <section class="model-control-card">
         <div class="section-label-row">
           <label for="modelSelect">Target Model to Test:</label>
-          <span class="models-count" id="modelsCount">18 models</span>
+          <span class="models-count" id="modelsCount">4 models</span>
         </div>
 
         <div class="select-wrapper">
           <select id="modelSelect" class="model-dropdown">
-            <!-- Populated dynamically via JS -->
+            <optgroup label="⚡ Uninterrupted (Always Active)">
+              <option value="deepseek-v4-flash" selected>⚡ DeepSeek V4 Flash</option>
+            </optgroup>
             <optgroup label="Claude Family (Quota Pool: 10:00 & 19:00)">
-              <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-              <option value="claude-3-7-sonnet-20250219-thinking">Claude 3.7 Sonnet (Thinking)</option>
-              <option value="claude-opus-5">Claude Opus 5</option>
               <option value="claude-opus-4-8">Claude Opus 4.8</option>
-              <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
-              <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+              <option value="claude-opus-5">Claude Opus 5</option>
             </optgroup>
             <optgroup label="OpenAI Family (Quota Pool: 10:00 & 19:00)">
-              <option value="gpt-4o">GPT-4o</option>
-              <option value="gpt-4o-mini">GPT-4o Mini</option>
-              <option value="gpt-5.6-sol">GPT-5.6 Sol</option>
               <option value="gpt-6-astra">GPT-6 Astra</option>
-              <option value="o1-mini">OpenAI o1-mini</option>
-            </optgroup>
-            <optgroup label="⚡ Uninterrupted Family (Always Active - No Pool Lock)">
-              <option value="deepseek-v4-flash" selected>⚡ DeepSeek V4 Flash</option>
-              <option value="deepseek-chat">⚡ DeepSeek V3 (Chat)</option>
-              <option value="deepseek-reasoner">⚡ DeepSeek R1 (Reasoner)</option>
-              <option value="glm-4-plus">⚡ GLM-4 Plus</option>
-              <option value="glm-5.3">⚡ GLM-5.3</option>
-              <option value="glm-4-flash">⚡ GLM-4 Flash</option>
             </optgroup>
           </select>
         </div>

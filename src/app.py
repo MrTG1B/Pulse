@@ -149,7 +149,7 @@ def main():
             title="Pulse",
             url=widget_url,
             width=410,
-            height=680,
+            height=720,
             min_size=(360, 90),
             resizable=True,
             frameless=True,

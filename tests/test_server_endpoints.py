@@ -104,7 +104,7 @@ class TestServerEndpoints(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertIn("models", data)
-        self.assertGreater(len(data["models"]), 5)
+        self.assertGreaterEqual(len(data["models"]), 4)
 
     def test_api_config_key_save_and_clear(self):
         # Save key

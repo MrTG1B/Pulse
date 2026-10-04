@@ -22,21 +22,20 @@ class TestRouterClient(unittest.TestCase):
         model_ids = [m["id"] for m in models]
 
         # Claude models
-        self.assertIn("claude-3-5-sonnet-20241022", model_ids)
+        self.assertIn("claude-opus-4-8", model_ids)
         self.assertIn("claude-opus-5", model_ids)
 
         # GPT models
-        self.assertIn("gpt-4o", model_ids)
+        self.assertIn("gpt-6-astra", model_ids)
 
-        # Uninterrupted models (DeepSeek & GLM)
-        self.assertIn("deepseek-chat", model_ids)
-        self.assertIn("glm-4-plus", model_ids)
+        # Uninterrupted models (DeepSeek)
+        self.assertIn("deepseek-v4-flash", model_ids)
 
         # Verify uninterrupted models have quota_limited == False
-        ds_model = next(m for m in models if m["id"] == "deepseek-chat")
+        ds_model = next(m for m in models if m["id"] == "deepseek-v4-flash")
         self.assertFalse(ds_model["quota_limited"])
 
-        claude_model = next(m for m in models if m["id"] == "claude-3-5-sonnet-20241022")
+        claude_model = next(m for m in models if m["id"] == "claude-opus-4-8")
         self.assertTrue(claude_model["quota_limited"])
 
     def test_test_connection_no_key(self):

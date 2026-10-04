@@ -49,81 +49,6 @@ CATALOG_MODELS = [
         "quota_limited": True,
         "api_type": "openai",
         "tag": "Quota Pool"
-    },
-    # Standard Claude Series
-    {
-        "id": "claude-3-5-sonnet-20241022",
-        "name": "Claude 3.5 Sonnet",
-        "provider": "Anthropic",
-        "category": "claude",
-        "quota_limited": True,
-        "api_type": "anthropic",
-        "tag": "Quota Pool"
-    },
-    {
-        "id": "claude-3-7-sonnet-20250219-thinking",
-        "name": "Claude 3.7 Sonnet (Thinking)",
-        "provider": "Anthropic",
-        "category": "claude",
-        "quota_limited": True,
-        "api_type": "anthropic",
-        "tag": "Quota Pool"
-    },
-    {
-        "id": "claude-3-5-haiku-20241022",
-        "name": "Claude 3.5 Haiku",
-        "provider": "Anthropic",
-        "category": "claude",
-        "quota_limited": True,
-        "api_type": "anthropic",
-        "tag": "Quota Pool"
-    },
-    # Standard OpenAI Series
-    {
-        "id": "gpt-4o",
-        "name": "GPT-4o",
-        "provider": "OpenAI",
-        "category": "openai",
-        "quota_limited": True,
-        "api_type": "openai",
-        "tag": "Quota Pool"
-    },
-    {
-        "id": "gpt-4o-mini",
-        "name": "GPT-4o Mini",
-        "provider": "OpenAI",
-        "category": "openai",
-        "quota_limited": True,
-        "api_type": "openai",
-        "tag": "Quota Pool"
-    },
-    # Uninterrupted Series (DeepSeek & GLM)
-    {
-        "id": "deepseek-chat",
-        "name": "DeepSeek V3",
-        "provider": "DeepSeek",
-        "category": "uninterrupted",
-        "quota_limited": False,
-        "api_type": "openai",
-        "tag": "⚡ Always Active"
-    },
-    {
-        "id": "deepseek-reasoner",
-        "name": "DeepSeek R1 Reasoning",
-        "provider": "DeepSeek",
-        "category": "uninterrupted",
-        "quota_limited": False,
-        "api_type": "openai",
-        "tag": "⚡ Always Active"
-    },
-    {
-        "id": "glm-4-plus",
-        "name": "GLM-4 Plus",
-        "provider": "Zhipu AI",
-        "category": "uninterrupted",
-        "quota_limited": False,
-        "api_type": "openai",
-        "tag": "⚡ Always Active"
     }
 ]
 
@@ -420,11 +345,12 @@ def batch_check_models(model_ids: Optional[List[str]] = None, api_key: Optional[
         api_key = config_manager.get_api_key()
 
     if not model_ids:
-        # Default test 1 Claude, 1 GPT, and 1 DeepSeek
+        # Default test active models on AgentRouter
         model_ids = [
-            "claude-3-5-sonnet-20241022",
-            "gpt-4o",
-            "deepseek-chat"
+            "deepseek-v4-flash",
+            "claude-opus-4-8",
+            "claude-opus-5",
+            "gpt-6-astra"
         ]
 
     results = {}
