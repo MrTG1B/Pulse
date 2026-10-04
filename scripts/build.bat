@@ -1,8 +1,10 @@
 @echo off
+title Build Pulse Executable
+cd /d "%~dp0\.."
 echo ========================================================
 echo  Pulse — Standalone Executable Build Script
 echo ========================================================
-python build_exe.py
+python scripts\build_exe.py
 if %ERRORLEVEL% NEQ 0 (
     echo [Error] Build failed!
     pause

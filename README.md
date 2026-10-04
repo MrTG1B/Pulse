@@ -106,10 +106,10 @@ To compile `Pulse.exe` locally:
 
 ```powershell
 # Run the Python build automation
-python build_exe.py
+python scripts/build_exe.py
 
 # Or execute the batch file
-.\build.bat
+.\scripts\build.bat
 ```
 
 Output executable will be placed in `dist/Pulse.exe`.
@@ -136,44 +136,53 @@ python -m unittest discover -s tests
 
 ```
 Pulse/
-├── app.py                  # Desktop window launcher (pywebview / Edge WebView2)
-├── server.py               # Local REST API & static asset server
-├── router_client.py        # AgentRouter API diagnostic engine & model catalog
-├── time_service.py         # Quota release schedule & timezone calculations
-├── config_manager.py       # API key persistence & config storage
-├── config.example.json     # Configuration template
-├── build_exe.py            # Standalone PyInstaller executable builder
-├── build.bat               # Windows 1-click build batch script
-├── run_widget.bat          # 1-click source runner batch script
-├── requirements.txt        # Python package dependencies
-├── icon.png                # Master branding icon (PNG)
-├── icon.ico                # Multi-resolution Windows application icon (ICO)
-├── static/
+├── src/                    # Application backend & client source modules
+│   ├── app.py              # Main desktop window launcher (pywebview)
+│   ├── server.py           # Local REST API & static asset server
+│   ├── router_client.py    # Diagnostic engine & model discovery
+│   ├── time_service.py     # Quota release schedule & timezone calculations
+│   └── config_manager.py   # Thread-safe settings & credential manager
+├── static/                 # Frontend UI web application
 │   ├── index.html          # Widget UI structure & Help guide
 │   ├── style.css           # Commercial Dark FinTech design system
 │   ├── widget.js           # Frontend reactive controller & Web Audio
 │   ├── icon.png            # Webview branding asset
 │   └── icon.ico            # Webview favicon asset
-├── tests/
+├── assets/                 # Brand assets & master icons
+│   ├── icon.png            # High-res master logo (PNG)
+│   └── icon.ico            # Multi-resolution Windows application icon (ICO)
+├── docs/                   # Commercial documentation & guides
+│   ├── USER_GUIDE.md       # Comprehensive user manual & troubleshooting
+│   ├── SECURITY.md         # Vulnerability reporting & token encryption policy
+│   ├── CONTRIBUTING.md     # Engineering standards & contribution workflow
+│   └── CHANGELOG.md        # Version history & release notes
+├── scripts/                # Packaging & build automation
+│   ├── build_exe.py        # PyInstaller standalone executable builder
+│   ├── build.bat           # 1-click executable compile script
+│   └── file_version_info.txt # Windows PE VersionInfo resource definition
+├── tests/                  # Automated test suite (43/43 passing)
 │   ├── test_config_manager.py
 │   ├── test_router_client.py
 │   ├── test_server_endpoints.py
 │   └── test_time_service.py
-├── LICENSE                 # Commercial-friendly MIT License
-├── SECURITY.md             # Security policy & vulnerability reporting
-├── CONTRIBUTING.md         # Developer setup & contribution guidelines
-├── CHANGELOG.md            # Version release notes (Keep a Changelog)
-└── USER_GUIDE.md           # Comprehensive commercial user manual
+├── dist/                   # Compiled standalone binaries
+│   └── Pulse.exe           # 🚀 Standalone single-file Windows executable (no terminal)
+├── app.py                  # Root entry point launcher
+├── run_widget.bat          # 1-click Python source launcher
+├── config.example.json     # Git-safe configuration template
+├── requirements.txt        # Python package dependencies
+├── .gitignore              # Git ignore rules
+└── LICENSE                 # Commercial-friendly MIT License
 ```
 
 ---
 
 ## 📚 Commercial Documentation
 
-- [User Guide & Troubleshooting Manual](USER_GUIDE.md)
-- [Security Policy & Disclosures](SECURITY.md)
-- [Contributing Guidelines](CONTRIBUTING.md)
-- [Release Changelog](CHANGELOG.md)
+- [User Guide & Troubleshooting Manual](docs/USER_GUIDE.md)
+- [Security Policy & Disclosures](docs/SECURITY.md)
+- [Contributing Guidelines](docs/CONTRIBUTING.md)
+- [Release Changelog](docs/CHANGELOG.md)
 - [License](LICENSE)
 
 ---

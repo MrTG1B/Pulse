@@ -30,9 +30,13 @@ import router_client
 
 
 def get_bundle_dir() -> str:
-    """Returns base directory for bundled assets, supporting PyInstaller onefile."""
+    """Returns base directory for bundled assets, supporting PyInstaller onefile and dev tree."""
     if getattr(sys, "frozen", False):
         return getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
+    # In development mode, check root directory (parent of src/) then adjacent
+    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if os.path.exists(os.path.join(parent_dir, "static")):
+        return parent_dir
     return os.path.dirname(os.path.abspath(__file__))
 
 

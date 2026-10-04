@@ -4,7 +4,11 @@ Verifies UTC 02:00 and 11:00 release schedule calculations and UTC+05:30 IST con
 """
 
 import unittest
+import os
+import sys
 from datetime import datetime, timezone, timedelta
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 import time_service
 
 

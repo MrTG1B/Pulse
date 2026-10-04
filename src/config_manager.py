@@ -40,6 +40,12 @@ def get_config_path() -> str:
                 return os.path.join(pulse_dir, "config.json")
             except Exception:
                 return portable_path
+
+    # When running from source: check project root (parent of src/), else script directory
+    src_parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    root_config = os.path.join(src_parent, "config.json")
+    if os.path.exists(root_config) or os.path.exists(os.path.join(src_parent, "config.example.json")):
+        return root_config
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
 
 
