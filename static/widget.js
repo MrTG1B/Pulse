@@ -12,7 +12,8 @@
     apiKey: '',
     maskedApiKey: '',
     hasApiKey: false,
-    selectedModel: 'claude-3-5-sonnet-20241022',
+    isKeyRevealed: false,
+    selectedModel: 'deepseek-v4-flash',
     baseUrl: 'https://agentrouter.org',
     autoRefresh: true,
     refreshInterval: 30, // seconds
@@ -186,12 +187,24 @@
 
     // API Key Interactions
     el.btnEditKey.addEventListener('click', toggleKeyDrawer);
+    const keyStripLeft = document.getElementById('keyStripLeft');
+    if (keyStripLeft) keyStripLeft.addEventListener('click', toggleKeyDrawer);
     el.btnCloseKeyDrawer.addEventListener('click', () => el.keyDrawer.style.display = 'none');
     if (el.btnCancelEditKey) el.btnCancelEditKey.addEventListener('click', () => el.keyDrawer.style.display = 'none');
     if (el.btnInputEye) el.btnInputEye.addEventListener('click', toggleInputEye);
     el.btnSaveKey.addEventListener('click', saveApiKey);
     el.btnClearKey.addEventListener('click', clearApiKey);
     el.btnToggleKeyMask.addEventListener('click', toggleKeyMaskDisplay);
+
+    // Enter key to submit API keys
+    el.inputApiKey.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') saveApiKey();
+    });
+    if (el.settingApiKey) {
+      el.settingApiKey.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') saveModalApiKey();
+      });
+    }
 
     // Testing & Discovery
     el.btnTestConnection.addEventListener('click', () => testConnection(true));
@@ -249,6 +262,8 @@
     el.btnSoundToggle.addEventListener('click', () => {
       state.soundEnabled = !state.soundEnabled;
       el.soundIcon.textContent = state.soundEnabled ? '🔔' : '🔕';
+      if (el.settingChime) el.settingChime.checked = state.soundEnabled;
+      saveConfigToServer({ sound_alert_enabled: state.soundEnabled });
       if (state.soundEnabled) playChime();
     });
 
@@ -262,6 +277,36 @@
       saveConfigToServer({ base_url: state.baseUrl });
     });
     el.settingTimezone.addEventListener('change', onTimezoneSettingChange);
+    if (el.settingAlwaysOnTop) {
+      el.settingAlwaysOnTop.addEventListener('change', (e) => {
+        state.isPinned = e.target.checked;
+        el.btnPin.classList.toggle('active', state.isPinned);
+        saveConfigToServer({ always_on_top: state.isPinned });
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.toggle_always_on_top) {
+          window.pywebview.api.toggle_always_on_top(state.isPinned);
+        }
+      });
+    }
+    if (el.settingChime) {
+      el.settingChime.addEventListener('change', (e) => {
+        state.soundEnabled = e.target.checked;
+        el.soundIcon.textContent = state.soundEnabled ? '🔔' : '🔕';
+        saveConfigToServer({ sound_alert_enabled: state.soundEnabled });
+        if (state.soundEnabled) playChime();
+      });
+    }
+
+    // Modal overlay backdrop clicks to dismiss
+    if (el.settingsModal) {
+      el.settingsModal.addEventListener('click', (e) => {
+        if (e.target === el.settingsModal) closeSettingsModal();
+      });
+    }
+    if (el.helpModal) {
+      el.helpModal.addEventListener('click', (e) => {
+        if (e.target === el.helpModal) closeHelpModal();
+      });
+    }
 
     // Interactive UI components
     setupHelpTabs();
@@ -337,15 +382,15 @@
   // --- API Key Logic ---
   function updateKeyDisplay() {
     if (state.hasApiKey) {
-      el.keyDisplayValue.textContent = (isKeyRevealed && state.apiKey) ? state.apiKey : (state.maskedApiKey || 'sk-••••••••');
+      el.keyDisplayValue.textContent = (state.isKeyRevealed && state.apiKey) ? state.apiKey : (state.maskedApiKey || 'sk-••••••••');
       el.btnEditKey.textContent = 'Edit';
       el.btnToggleKeyMask.style.display = 'inline-block';
-      el.btnToggleKeyMask.textContent = isKeyRevealed ? 'Hide' : 'Show';
+      el.btnToggleKeyMask.textContent = state.isKeyRevealed ? 'Hide' : 'Show';
     } else {
       el.keyDisplayValue.textContent = 'Not Set (Click to enter)';
       el.btnEditKey.textContent = 'Enter Key';
       el.btnToggleKeyMask.style.display = 'none';
-      isKeyRevealed = false;
+      state.isKeyRevealed = false;
     }
   }
 
@@ -390,10 +435,9 @@
     }
   }
 
-  let isKeyRevealed = false;
   async function toggleKeyMaskDisplay() {
-    isKeyRevealed = !isKeyRevealed;
-    if (isKeyRevealed) {
+    state.isKeyRevealed = !state.isKeyRevealed;
+    if (state.isKeyRevealed) {
       if (!state.apiKey) {
         try {
           const res = await fetch('/api/config/key');
@@ -432,6 +476,7 @@
       updateKeyDisplay();
       el.keyDrawer.style.display = 'none';
       el.inputApiKey.value = '';
+      if (el.settingApiKey) el.settingApiKey.value = state.apiKey;
 
       // Test connection immediately with new key
       testConnection(true);
@@ -460,10 +505,11 @@
       state.hasApiKey = false;
       state.maskedApiKey = '';
       state.apiKey = '';
-      isKeyRevealed = false;
+      state.isKeyRevealed = false;
       updateKeyDisplay();
       el.keyDrawer.style.display = 'none';
       el.inputApiKey.value = '';
+      if (el.settingApiKey) el.settingApiKey.value = '';
       testConnection(true);
     } catch (e) {
       console.error(e);
@@ -715,6 +761,14 @@
       el.compactStatusDot.style.backgroundColor = 'var(--status-exhausted)';
       el.compactStatusText.textContent = '401 UNAUTHORIZED';
       el.compactStatusText.style.color = 'var(--status-exhausted)';
+      el.quotaExhaustedBanner.style.display = 'none';
+      if (el.noChannelBanner) el.noChannelBanner.style.display = 'none';
+    } else if (statusType === 'no_key') {
+      el.headerPulseDot.style.backgroundColor = 'var(--status-scheduled)';
+      el.headerPulseDot.style.boxShadow = '0 0 10px var(--status-scheduled-glow)';
+      el.compactStatusDot.style.backgroundColor = 'var(--status-scheduled)';
+      el.compactStatusText.textContent = 'KEY REQUIRED';
+      el.compactStatusText.style.color = 'var(--status-scheduled)';
       el.quotaExhaustedBanner.style.display = 'none';
       if (el.noChannelBanner) el.noChannelBanner.style.display = 'none';
     } else if (data.status_code && data.status_code > 0) {
@@ -1126,6 +1180,15 @@
     el.settingBaseUrl.value = state.baseUrl;
     el.settingAlwaysOnTop.checked = state.isPinned;
     el.settingChime.checked = state.soundEnabled;
+    if (el.settingTimezone) {
+      el.settingTimezone.value = String(state.userOffsetMinutes);
+    }
+    if (el.settingApiKey) {
+      el.settingApiKey.value = state.apiKey || '';
+      if (!state.apiKey && state.maskedApiKey) {
+        el.settingApiKey.placeholder = state.maskedApiKey;
+      }
+    }
   }
 
   function closeSettingsModal() {

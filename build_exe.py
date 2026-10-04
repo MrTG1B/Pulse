@@ -29,6 +29,7 @@ def build():
     # 2. PyInstaller command arguments
     static_data = f"{os.path.join(BASE_DIR, 'static')};static"
     config_example_data = f"{os.path.join(BASE_DIR, 'config.example.json')};."
+    version_file_path = os.path.join(BASE_DIR, "file_version_info.txt")
 
     cmd = [
         sys.executable,
@@ -45,8 +46,12 @@ def build():
         "--hidden-import", "requests",
         "--clean",
         "-y",
-        os.path.join(BASE_DIR, "app.py")
     ]
+
+    if os.path.exists(version_file_path):
+        cmd.extend(["--version-file", version_file_path])
+
+    cmd.append(os.path.join(BASE_DIR, "app.py"))
 
     print("[Build] Running PyInstaller command:")
     print(" ".join(cmd))

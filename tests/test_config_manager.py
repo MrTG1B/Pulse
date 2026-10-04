@@ -105,6 +105,28 @@ class TestConfigManager(unittest.TestCase):
         tmpl = config_manager.get_template_config()
         self.assertIsInstance(tmpl, dict)
 
+    def test_save_and_load_widget_settings(self):
+        """Verifies persistence of settings like always_on_top and sound_alert_enabled."""
+        updates = {
+            "always_on_top": False,
+            "sound_alert_enabled": False,
+            "user_timezone_offset": 480,
+            "selected_model": "deepseek-v4-flash"
+        }
+        config_manager.save_config(updates)
+        cfg = config_manager.load_config()
+        self.assertFalse(cfg["always_on_top"])
+        self.assertFalse(cfg["sound_alert_enabled"])
+        self.assertEqual(cfg["user_timezone_offset"], 480)
+        self.assertEqual(cfg["selected_model"], "deepseek-v4-flash")
+
+    def test_mask_key_edge_cases(self):
+        """Verifies mask_key handles None, whitespace, and boundaries."""
+        self.assertEqual(config_manager.mask_key(None), "")
+        self.assertEqual(config_manager.mask_key("   "), "")
+        self.assertEqual(config_manager.mask_key("12345678"), "••••••••")
+        self.assertEqual(config_manager.mask_key("123456789"), "1234••••••••6789")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -76,9 +76,9 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 
 def mask_key(key: str) -> str:
     """Masks an API key for safe display (e.g., sk-1234••••••••5678)."""
+    key = (key or "").strip()
     if not key:
         return ""
-    key = key.strip()
     if len(key) <= 8:
         return "••••••••"
     prefix = key[:4]

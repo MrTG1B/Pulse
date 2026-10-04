@@ -44,18 +44,18 @@
     </header>
 
     <!-- Compact Floating Bar View (When Compact Mode Active) -->
-    <div class="compact-view" id="compactView">
+    <div class="compact-view pywebview-drag-region" id="compactView">
       <div class="compact-left">
         <img src="icon.png" class="compact-logo" alt="Pulse" width="16" height="16">
         <span class="status-indicator-dot" id="compactStatusDot"></span>
         <span class="compact-status-text" id="compactStatusText">Checking...</span>
       </div>
-      <div class="compact-center" id="compactCenter" title="Click to view local release time">
+      <div class="compact-center no-drag" id="compactCenter" title="Click to view local release time">
         <span class="compact-countdown-label">Next:</span>
         <span class="compact-countdown-val" id="compactCountdown">--:--:--</span>
         <span class="compact-local-val" id="compactLocalTime">(--:-- IST)</span>
       </div>
-      <div class="compact-right">
+      <div class="compact-right no-drag">
         <span class="compact-latency" id="compactLatency">-- ms</span>
         <button class="mini-btn" id="btnCompactRefresh" title="Quick Refresh">↻</button>
         <button class="mini-btn" id="btnCompactExpand" title="Expand Full View">⤢</button>
@@ -67,7 +67,7 @@
 
       <!-- API Key Quick Bar / Prompt -->
       <section class="api-key-strip" id="apiKeyStrip">
-        <div class="key-strip-left">
+        <div class="key-strip-left" id="keyStripLeft" style="cursor: pointer;" title="Click to view or edit API key">
           <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" class="key-icon"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
           <span class="key-label">API KEY:</span>
           <span class="key-val" id="keyDisplayValue">Not Set</span>
@@ -223,7 +223,7 @@
           <select id="modelSelect" class="model-dropdown">
             <!-- Populated dynamically via JS -->
             <optgroup label="Claude Family (Quota Pool: 10:00 & 19:00)">
-              <option value="claude-3-5-sonnet-20241022" selected>Claude 3.5 Sonnet</option>
+              <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
               <option value="claude-3-7-sonnet-20250219-thinking">Claude 3.7 Sonnet (Thinking)</option>
               <option value="claude-opus-5">Claude Opus 5</option>
               <option value="claude-opus-4-8">Claude Opus 4.8</option>
@@ -238,9 +238,9 @@
               <option value="o1-mini">OpenAI o1-mini</option>
             </optgroup>
             <optgroup label="⚡ Uninterrupted Family (Always Active - No Pool Lock)">
+              <option value="deepseek-v4-flash" selected>⚡ DeepSeek V4 Flash</option>
               <option value="deepseek-chat">⚡ DeepSeek V3 (Chat)</option>
               <option value="deepseek-reasoner">⚡ DeepSeek R1 (Reasoner)</option>
-              <option value="deepseek-v4-flash">⚡ DeepSeek V4 Flash</option>
               <option value="glm-4-plus">⚡ GLM-4 Plus</option>
               <option value="glm-5.3">⚡ GLM-5.3</option>
               <option value="glm-4-flash">⚡ GLM-4 Flash</option>

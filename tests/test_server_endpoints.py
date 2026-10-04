@@ -151,6 +151,18 @@ class TestServerEndpoints(unittest.TestCase):
         self.assertIn("success", data)
         self.assertIn("models", data)
 
+    def test_api_config_update_settings(self):
+        resp = requests.post(f"{self.base_url}/api/config", json={
+            "always_on_top": False,
+            "sound_alert_enabled": False,
+            "selected_model": "deepseek-v4-flash"
+        })
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertFalse(data["always_on_top"])
+        self.assertFalse(data["sound_alert_enabled"])
+        self.assertEqual(data["selected_model"], "deepseek-v4-flash")
+
 
 if __name__ == "__main__":
     unittest.main()

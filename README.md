@@ -4,7 +4,7 @@
 [![Target Service](https://img.shields.io/badge/target%20service-agentrouter.org-B8FF3D?style=flat-square&labelColor=111111)](https://agentrouter.org)
 [![Executable](https://img.shields.io/badge/distribution-Single--File%20.exe%20(No%20Terminal)-success?style=flat-square)](https://github.com/MrTG1B/Pulse)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-36%2F36%20passed-brightgreen?style=flat-square)](tests)
+[![Tests](https://img.shields.io/badge/tests-43%2F43%20passed-brightgreen?style=flat-square)](tests)
 
 **Pulse** is a lightweight, high-performance, commercial-grade floating desktop monitor and telemetry widget designed specifically for **[AgentRouter](https://agentrouter.org/)**.
 
