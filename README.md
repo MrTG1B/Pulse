@@ -2,14 +2,14 @@
 
 > **Know when your models are ready.**
 
-[![Download Pulse.exe](https://img.shields.io/badge/Download-Pulse.exe%20(v1.0.0)-B8FF3D?style=flat-square&logo=windows&logoColor=0A0A0A&labelColor=111111)](https://github.com/MrTG1B/Pulse/releases/download/v1.0.0/Pulse.exe)
+[![Download Pulse.exe](https://img.shields.io/badge/Download-Pulse.exe%20(v1.1.0)-B8FF3D?style=flat-square&logo=windows&logoColor=0A0A0A&labelColor=111111)](https://github.com/MrTG1B/Pulse/releases/download/v1.1.0/Pulse.exe)
 [![Latest Release](https://img.shields.io/github/v/release/MrTG1B/Pulse?style=flat-square&color=B8FF3D&label=Latest%20Release)](https://github.com/MrTG1B/Pulse/releases/latest)
 [![Target Service](https://img.shields.io/badge/target%20service-agentrouter.org-B8FF3D?style=flat-square&labelColor=111111)](https://agentrouter.org)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20(64--bit)-0078D6?style=flat-square&logo=windows)](https://github.com/MrTG1B/Pulse/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-46%2F46%20passed-brightgreen?style=flat-square)](tests)
+[![Tests](https://img.shields.io/badge/tests-135%2F135%20passed-brightgreen?style=flat-square)](tests)
 
-[ **Download for Windows** ](https://github.com/MrTG1B/Pulse/releases/download/v1.0.0/Pulse.exe) • [ **User Guide** ](docs/USER_GUIDE.md) • [ **Security Policy** ](docs/SECURITY.md) • [ **GitHub Release** ](https://github.com/MrTG1B/Pulse/releases/tag/v1.0.0)
+[ **Download for Windows** ](https://github.com/MrTG1B/Pulse/releases/download/v1.1.0/Pulse.exe) • [ **User Guide** ](docs/USER_GUIDE.md) • [ **Security Policy** ](docs/SECURITY.md) • [ **GitHub Release** ](https://github.com/MrTG1B/Pulse/releases/tag/v1.1.0)
 
 ![Pulse Social Preview](assets/social_preview.png)
 
@@ -17,19 +17,17 @@
 
 ```text
 ┌───────────────────────────────────────────────┐
-│ ● Claude Opus 4.8                             │
-│   AVAILABLE                                   │
+│ ● GPT-6.1 Sol                  RECOMMENDED    │
+│   Unlimited · all day · live multiplier       │
 │                                               │
-│ Next quota window                             │
-│ 16:30 IST                                     │
-│                                               │
-│ GPT-6 Astra                   ● AVAILABLE     │
+│ Latest notice: Opus 5.5 temporarily offline    │
+│ Models, notices & usage sync automatically    │
 └───────────────────────────────────────────────┘
 ```
 
 ### Stop checking AgentRouter manually.
 Getting **`402 Budget pool quota has been exhausted`** on AgentRouter?  
-Pulse watches model availability, quota replenishment windows, and gateway connectivity so you know the exact minute Claude and GPT are ready to code.
+Pulse follows AgentRouter announcements, your live account models, and gateway connectivity. Quota countdowns appear only when a model has published release times.
 
 ---
 
@@ -37,31 +35,28 @@ Pulse watches model availability, quota replenishment windows, and gateway conne
 
 When you're building with **Claude Code**, **Codex**, or AgentRouter API tokens, shared budget pools run dry during peak hours. Manually sending test prompts or refreshing status dashboards wastes time and disrupts your coding flow.
 
-Pulse runs as a lightweight, always-on-top desktop widget that sits alongside your IDE or terminal. It monitors AgentRouter availability in the background at a configurable polling interval, calculates the exact countdown to the next quota drop in your local timezone, and alerts you the moment capacity is restored.
+Pulse runs as a lightweight, always-on-top desktop widget that sits alongside your IDE or terminal. It monitors AgentRouter availability in the background at a configurable polling interval, updates models and notices automatically, displays reported API-key usage, and shows a local-time countdown for published quota drops.
 
 ### Features
 - **AgentRouter Availability Polling**: Background health and latency benchmarks at configurable intervals directly against `agentrouter.org`.
 - **HTTP 402 Quota Detection**: Instantly recognizes budget pool exhaustion and provides 1-click fallback to uninterrupted models.
-- **Local Timezone Countdown**: Precision countdown tickers to official drop batches (`07:30 AM` and `04:30 PM IST` / `02:00` and `11:00 UTC`).
+- **Local Timezone Countdown**: Precision countdown tickers to the selected model's current published release times.
 - **Compatible AgentRouter Client Headers**: Uses authentic client identification profiles (`claude-cli/1.0.108`) to ensure seamless interoperability for Claude Code and Codex workflows.
-- **Dynamic Model Discovery**: Auto-detects all available models on your account token with live response time benchmarks.
+- **Automatic Models & Notices**: Refreshes `/v1/models`, public pricing and dated announcements every five minutes, with **Sync Now** for immediate updates. Model removals, supply changes, aliases and recommendations update the UI automatically.
+- **Reported Usage**: Displays API-key credit usage and key caps. Shows recent per-model input/output token counts when logs are returned; unreported model balances stay unknown.
+- **Cached Provider Data**: Keeps the last successful model and notice data during outages and visibly marks stale data.
 - **Windows DPAPI Local Key Encryption**: Pulse encrypts AgentRouter API keys at rest using Windows Data Protection API (`CryptProtectData`). The encrypted value is bound to the Windows user context and is not stored as plaintext.
 - **Always-on-Top Floating Widget**: Sleek, distraction-free desktop window with a 1-click compact mini-dock mode.
 
 ---
 
-## 🔄 The Quota Lifecycle Flow
+## 🔄 Current Supply & Quota Behavior
 
-```
-402 QUOTA EXHAUSTED  ──>  Countdown to Next Window (07:30 / 16:30 IST)  ──>  🔔 Chime Alert  ──>  🟢 AVAILABLE (200 OK)
-```
+AgentRouter's latest dated notice says **Claude Opus 5.5 is temporarily unavailable**, **GPT-6 Astra is unlimited all day**, and **GPT-6.1 Sol is unlimited at a low multiplier and recommended first**. Pulse fetches the live account catalog and pricing rather than assuming every model is available to every token.
 
-1. **Detection**: AgentRouter returns `HTTP 402 Budget pool quota has been exhausted`.
-2. **Countdown**: Pulse calculates the exact time remaining until the next replenishment window:
-   - **Morning Batch**: `10:00 AM Beijing` (02:00 UTC / `07:30 AM IST`)
-   - **Evening Batch**: `07:00 PM Beijing` (11:00 UTC / `04:30 PM IST`)
-3. **Notification**: Audio chime sounds when the replenishment window opens.
-4. **Availability**: Live diagnostic confirms `HTTP 200 OK` — your models are immediately ready for Claude Code and Codex tasks.
+Unlimited and suspended models have no quota refill countdown. If a later announcement limits a model and publishes release times, Pulse calculates that model's local countdown and updates any enabled auto-focus jobs. A restored model is checked again instead of reusing an old quota schedule.
+
+Dated announcements take priority over the older `/api/notice` text. If a refresh fails, Pulse keeps the last good data and retries automatically.
 
 ---
 
@@ -69,9 +64,9 @@ Pulse runs as a lightweight, always-on-top desktop widget that sits alongside yo
 
 | Issue / Search Query | What It Means | How Pulse Solves It |
 |---|---|---|
-| **`402 Budget pool quota has been exhausted`** | The shared Claude / GPT pool has reached its daily limit. | Tracks the exact countdown until quota resets; provides 1-click switch to `deepseek-v4-flash`. |
+| **`402 Budget pool quota has been exhausted`** | The requested model or shared provider pool has exhausted its budget. | Uses the selected model's published release schedule and offers an available fallback. |
 | **`401 unauthorized client detected`** | Gateway rejected unrecognized or bare HTTP headers. | Automatically sends authentic, compatible client headers (`claude-cli/1.0.108`). |
-| **`503 no available channel in group`** | Model is not routed in your token's assigned channel group. | Identifies active channel models (`deepseek-v4-flash`) and provides live model discovery. |
+| **`503 no available channel in group`** | Model is not routed in your token's assigned channel group. | Reconciles the live account catalog and offers another available model. |
 | **AgentRouter Claude Code connectivity** | CLI coding tools fail silently during pool outages. | Float Pulse next to VS Code / terminal to know when Claude is ready before running commands. |
 
 ---
@@ -79,7 +74,7 @@ Pulse runs as a lightweight, always-on-top desktop widget that sits alongside yo
 ## 📦 Download & Quick Start
 
 ### Option 1: Standalone Windows App (No Python Needed)
-1. Download **[Pulse.exe (v1.0.0)](https://github.com/MrTG1B/Pulse/releases/download/v1.0.0/Pulse.exe)** (31.5 MB).
+1. Download **[Pulse.exe (v1.1.0)](https://github.com/MrTG1B/Pulse/releases/download/v1.1.0/Pulse.exe)** .
 2. Double-click to launch. No installer, no terminal window, no dependencies.
 3. Click **Enter Key** in the top bar to paste your AgentRouter API key (`sk-...`).
 
@@ -106,7 +101,7 @@ python app.py --browser
 Pulse is designed with zero-telemetry and local-first security principles:
 - **Windows DPAPI Encryption**: Pulse encrypts AgentRouter API keys at rest using the Windows Data Protection API (`CryptProtectData` via `crypt32.dll`). The encrypted value is bound to the Windows user context and is not stored as plaintext.
 - **No Key Exposure Over Local API**: Local HTTP endpoints never return raw API keys over the network (only `has_api_key` and masked strings).
-- **No Remote Telemetry**: Pulse connects only to `https://agentrouter.org` for diagnostics and `127.0.0.1` for local UI rendering. No external analytics, tracking, or logs.
+- **No Analytics Telemetry**: Model and usage data stays local. Optional Gemini verification can send candidate window titles and screenshots to Google when enabled; the interface also loads Google Fonts.
 - **Masked Credentials**: Keys are masked across all UI views (`sk-••••••••1234`).
 - **Git-Safe**: `config.json` is explicitly gitignored.
 
@@ -114,18 +109,20 @@ For full disclosure and vulnerability reporting, see [SECURITY.md](docs/SECURITY
 
 ---
 
-## 🎯 Active Models Supported
+## 🎯 Live Models & Usage
 
-Pulse focuses on currently active AgentRouter models:
+The model list follows your account token. Current provider policies include:
 
-| Model ID | Provider | Type | Behavior |
-|---|---|---|---|
-| `claude-opus-4-8` | Anthropic | Quota Pool | Refreshes at 07:30 & 16:30 IST |
-| `claude-opus-5` | Anthropic | Quota Pool | Refreshes at 07:30 & 16:30 IST |
-| `gpt-6-astra` | OpenAI | Quota Pool | Refreshes at 07:30 & 16:30 IST |
-| `deepseek-v4-flash` | DeepSeek | Uninterrupted | ⚡ Always active; zero quota lock |
+| Model ID | Supply | Behavior |
+|---|---|---|
+| `gpt-6.1-sol` | Unlimited | Recommended; live low multiplier |
+| `gpt-6-astra` | Unlimited | Available all day; no scheduled refill |
+| `claude-opus-5-5` | Temporarily unavailable | Disabled until AgentRouter announces restoration |
+| Other account models | As reported | Added automatically; unknown quota policies remain unknown |
 
-Click the **Discover** button in Pulse anytime to probe `/v1/models` for newly activated models on your token.
+Use **Sync Now** to refresh immediately. Automatic metadata and usage synchronization continues when **Auto-check** is off; connection diagnostics remain separately controlled.
+
+The **API-Key Credits & Model Usage** panel displays the figures returned by AgentRouter. Billing credit usage is separate from raw token counts. An uncapped API key does not report the user's remaining account balance. Recent model logs, when returned, are a partial history rather than lifetime totals. Shared model pool quotas and remaining tokens are marked **not reported** when the API does not expose them.
 
 ---
 
@@ -136,7 +133,7 @@ Pulse is built as the availability engine for AI coding workflows:
 ```text
              PULSE
                │
-        Availability Engine  (v1.0 — Current)
+        Availability Engine  (v1.1 — Current)
                │
         ┌──────┴──────┐
         │             │
@@ -149,7 +146,7 @@ Pulse is built as the availability engine for AI coding workflows:
           Scheduler          (Planned)
 ```
 
-- **v1.0 (Current)**: Real-time availability monitor, HTTP 402 quota tracker, local countdowns, DPAPI security, and floating desktop widget.
+- **v1.1 (Current)**: Automatic model, notice and usage synchronization, model-specific quota tracking, DPAPI security, and a floating desktop widget.
 - **Future Releases**: Automated task queue that queues Claude Code and Codex prompts during quota dry spells and automatically executes them the second capacity refreshes.
 
 ---
@@ -162,6 +159,11 @@ Pulse/
 │   ├── app.py              # Desktop window launcher (WebView2)
 │   ├── server.py           # Local loopback server & API routes
 │   ├── router_client.py    # Gateway diagnostics & model discovery
+│   ├── provider_updates.py # Background models, pricing, notices & cached policies
+│   ├── usage_service.py    # Reported API-key credit and recent model usage
+│   ├── scheduler.py        # Model-specific quota release focus jobs
+│   ├── focus_trigger.py    # Optional Codex / Claude Code window controls
+│   ├── gemini_helper.py    # Optional AI verification & narration
 │   ├── time_service.py     # Quota schedule math & timezone calculations
 │   └── config_manager.py   # Windows DPAPI encryption & config persistence
 ├── static/                 # Frontend UI web application
@@ -183,7 +185,7 @@ Pulse/
 │   ├── build.bat           # 1-click Windows build batch file
 │   ├── generate_social_preview.py # Social card generator
 │   └── publish_release.py  # GitHub Release publishing automation
-├── tests/                  # Automated test suite (46/46 passing)
+├── tests/                  # Automated test suite (135/135 passing)
 ├── app.py                  # Root launcher entrypoint
 ├── requirements.txt        # Python package dependencies
 └── LICENSE                 # MIT License
@@ -199,7 +201,7 @@ Pulse maintains 100% test pass rates across all modules:
 python -m unittest discover tests
 ```
 
-Tests cover DPAPI encryption/decryption, legacy config migration, gateway status classification (200, 401, 402, 503, offline), UTC/IST quota release math, and local REST endpoints.
+Tests cover encrypted keys, gateway classification, notice precedence, model aliases, account isolation, cache recovery, background refresh, reported credit units, recent token logs, model-specific schedules, desktop behavior, and local REST endpoints.
 
 ---
 

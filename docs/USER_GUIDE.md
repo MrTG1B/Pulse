@@ -20,14 +20,14 @@
 
 ## 1. Overview
 
-AgentRouter provides high-speed access to leading LLMs (Claude 3.5/3.7, GPT-4o, DeepSeek, GLM). However, Claude and GPT models operate under daily budget pool limits that refresh twice per day. When a pool is exhausted, requests return `HTTP 402 Budget pool quota has been exhausted`.
+AgentRouter provides high-speed access to leading LLMs (Claude 3.5/3.7, GPT-4o, DeepSeek, GLM). Supply policies change per model. Pulse fetches the latest notices and live account catalog automatically. When a limited pool is exhausted, requests return `HTTP 402 Budget pool quota has been exhausted`.
 
 **Pulse solves this problem by providing:**
 - A floating desktop widget that sits atop your IDE (Cursor, VS Code, JetBrains).
 - Real-time countdown tickers to exact quota release times in your local timezone.
 - Instant connection and latency testing for any model.
-- 1-click fallback to **uninterrupted models** (such as DeepSeek V4 Flash) that have zero quota limits.
-- Dynamic model discovery from AgentRouter's live API.
+- 1-click fallback to an available model, preferring AgentRouter's current recommendation.
+- Automatic model, pricing and notice synchronization every five minutes, plus Sync Now.
 
 ---
 
@@ -36,7 +36,7 @@ AgentRouter provides high-speed access to leading LLMs (Claude 3.5/3.7, GPT-4o, 
 - **Operating System:** Windows 10 or Windows 11 (64-bit).
 - **Webview Engine:** Microsoft Edge WebView2 runtime (pre-installed on modern Windows 10/11).
 - **Network:** Outbound HTTPS access to `https://agentrouter.org` (port 443).
-- **RAM:** Less than 45 MB typical memory footprint.
+- **RAM:** Memory usage varies with WebView2 and optional focus/AI features.
 
 ---
 
@@ -65,22 +65,21 @@ python app.py --browser
 
 ## 4. Desktop Interface & Floating Controls
 
-```
+```text
 +-------------------------------------------------------+
-|  [Pulse] 🟢  [📌 Pin]  [⤢ Dock]  [⚙️]  [?]  [_]  [✕]   |  <- Draggable Titlebar
+|  [Pulse]  [Pin]  [Dock]  [Settings]  [Help]  [_]  [X]  |
 +-------------------------------------------------------+
-|  🔑 API KEY: sk-••••••••1234      [Edit] [Show]       |  <- Key Quick-Bar
+|  API KEY: sk-********1234                  [Edit]      |
+|  CONNECTED & ACTIVE                          82 ms    |
+|  GPT-6.1 Sol: Unlimited all day, recommended           |
 +-------------------------------------------------------+
-|  🟢 CONNECTED & ACTIVE                    142 ms       |  <- Status & Latency Card
-|  Model 'deepseek-v4-flash' is operational.            |
+|  Target Model: [ GPT-6.1 Sol                       v] |
+|  [ Test Connection ]   [ Test All ]   [ Sync Now ]    |
+|  Models & notices sync automatically every 5 minutes |
 +-------------------------------------------------------+
-|  NEXT QUOTA RELEASE                          [Batch 1] |  <- Quota Countdown Card
-|  01 : 45 : 22  (HOURS : MINS : SECS)                  |
-|  [=======================>            ] 68%            |  <- Cycle Progress Bar
-|  When in My Local Time: Today, 07:30 AM (IST)         |
-+-------------------------------------------------------+
-|  Target Model: [ ⚡ DeepSeek V4 Flash       ▼ ]       |  <- Model Selector
-|  [ ⚡ Test Connection ]   [ Test All ]   [ Discover ]  |
+|  API-Key Credits & Model Usage                       |
+|  Model Quota Status Overview                         |
+|  Latest AgentRouter Notice                           |
 +-------------------------------------------------------+
 ```
 
@@ -108,34 +107,31 @@ python app.py --browser
 
 ## 6. Daily Quota Drops & Timezone Translation
 
-AgentRouter replenishes the Claude and GPT shared budget pools twice daily:
+Pulse derives quota schedules from the latest dated provider announcements. Unlimited models and temporarily unavailable models have no refill countdown. A limited model gets a countdown only when AgentRouter publishes a release time; Pulse converts that time to your configured timezone.
 
-| Batch | Beijing Time (CST, UTC+08:00) | Universal Time (UTC) | India Standard Time (IST, UTC+05:30) |
-|---|---|---|---|
-| **Batch 1 (Morning)** | **10:00 AM CST** | **02:00 UTC** | **07:30 AM IST** |
-| **Batch 2 (Evening)** | **07:00 PM CST** | **11:00 UTC** | **04:30 PM IST** |
+Audio and optional auto-focus triggers follow the selected model's published schedule. A change to unlimited supply or temporary suspension removes obsolete jobs and prevents release triggers.
 
-### Automatic Local Time Conversion:
-Pulse automatically converts these drop times into your local time (defaulting to IST, UTC+05:30, or auto-detected from your system clock in Settings).
-
-### Audio Chime Alert:
-When the countdown ticker hits `00:00:00`, Pulse plays a subtle audio chime (if 🔔 enabled) and refreshes model status automatically.
+Models and notices refresh automatically every five minutes, even when connection **Auto-check** is off. **Sync Now** requests an immediate update. Failed refreshes keep cached data and show a stale status. The dated announcement feed takes priority over older undated notice text.
 
 ---
 
 ## 7. Quota Pool vs. Uninterrupted Models
 
-AgentRouter classifies models into two operational categories:
+The latest announcement reports:
 
-### 1. Quota Pool Models (Limited Daily Supply)
-- **Active Models:** `claude-opus-4-8`, `claude-opus-5`, `gpt-6-astra`.
-- **Behavior:** These models share a daily quota pool. When the pool runs dry, requests fail with `HTTP 402 Budget pool quota has been exhausted`.
-- **Recovery:** Wait for the next scheduled drop batch (07:30 AM or 04:30 PM IST), or switch to an uninterrupted model.
+- **GPT-6.1 Sol:** unlimited all day, low multiplier, recommended first.
+- **GPT-6 Astra:** unlimited all day; its old daily quota windows are removed.
+- **Claude Opus 5.5:** temporarily unavailable, with no announced restoration time.
 
-### 2. ⚡ Uninterrupted Models (Zero Pool Lock)
-- **Active Model:** `deepseek-v4-flash`.
-- **Behavior:** **This model is NOT restricted by the daily pool limit!** It is always active and ready for coding, chat, and reasoning.
-- **Pulse Recommendation:** Whenever Claude is exhausted (402), Pulse presents an instant 1-click button to switch to `deepseek-v4-flash`.
+The list follows your API token's models, and base multipliers come from current pricing. Models are added and removed automatically. Temporarily suspended models remain visible and disabled. If the saved model becomes unavailable, Pulse selects the current recommended available model. Unknown supply policies are displayed without inventing a quota window.
+
+### API-Key Credits & Model Usage
+
+Open this panel to see reported credit usage and any API-key cap. AgentRouter's billing API expresses usage in hundredths of a billing credit, so Pulse converts it to whole credits. These credits are separate from input/output token counts.
+
+An **Uncapped key** indicates that the API key has no configured cap; it does not reveal the remaining account balance or the shared provider pool. Unreported remaining balances and model tokens are clearly labeled **not reported**.
+
+If AgentRouter returns recent model logs, Pulse groups their input/output tokens and request counts by model. These are recent returned records, not lifetime totals. If no logs are returned, Pulse leaves the per-model totals unreported. Changing or clearing the API key clears the previous key's cached usage and connection status.
 
 ---
 
@@ -144,11 +140,17 @@ AgentRouter classifies models into two operational categories:
 | Status Code | Status Badge | Meaning | Recommended Action |
 |---|---|---|---|
 | **200 OK** | 🟢 **Available / Active** | The model is operational and quota is available. | You can safely make API requests. |
-| **402** | 🔴 **Quota Exhausted** | The daily budget pool for Claude/GPT has been depleted. | Check the countdown for the next batch, or click **Switch to DeepSeek V4 Flash**. |
-| **503** | 🔴 **No Channel** | The requested model is not available in your token's current channel pool (e.g. core). | Click **Discover** or select an active model like `deepseek-v4-flash`. |
+| **402** | 🔴 **Quota Exhausted** | The daily budget pool for Claude/GPT has been depleted. | Check the model's published schedule or use the suggested available fallback. |
+| **503** | 🔴 **No Channel** | The requested model is not available in your token's current channel pool (e.g. core). | Click **Sync Now** or select another available account model. |
 | **401** | 🔴 **Unauthorized** | Invalid API key or unauthorized client identity. | Check your API key in Settings. Pulse automatically uses compatible headers for Claude Code and Codex. |
 | **429** | 🔴 **Rate Limited** | Too many requests within a short timeframe. | Wait 10-30 seconds before retrying. |
 | **0** | ⚪ **Offline** | Cannot reach `https://agentrouter.org` or local network failure. | Check your internet connection. |
+
+### Desktop Window Appears Only in the Taskbar
+
+Older executables could place Pulse outside the screen on displays using 125%, 150%, or higher scaling. The launcher now accounts for display scaling and the usable monitor area, including space reserved for the taskbar.
+
+Open the updated `Pulse.exe`. If Pulse is already running, opening it again restores its minimized, hidden, or off-screen window and keeps the current Always on Top setting. Startup diagnostics are saved in `%USERPROFILE%\.pulse\pulse.log`.
 
 ---
 
@@ -156,8 +158,8 @@ AgentRouter classifies models into two operational categories:
 
 - <kbd>Esc</kbd> — Instantly dismisses any open modal (Help Guide, Settings, API Key drawer).
 - <kbd>R</kbd> — Triggers an immediate connection test on the currently selected model.
-- **Model Overview Filter Chips:** In the *Model Quota Status Overview* drawer, click chips (`All`, `🟢 Active`, `⚡ Uninterrupted`, `⏱️ Quota Pool`) to instantly filter through 18+ models.
-- **Discover Live Models:** Click the **Discover** button to query `/v1/models` on AgentRouter and discover newly added models available to your specific account token.
+- **Model Overview Filter Chips:** In the *Model Quota Status Overview* drawer, click chips (`All`, `🟢 Active`, `⚡ Uninterrupted`, `⏱️ Quota Pool`) to filter the current account catalog.
+- **Sync Live Models:** Click **Sync Now** to refresh models and notices immediately. The background sync also updates them every five minutes.
 
 ---
 
@@ -167,9 +169,10 @@ Pulse persists settings in `config.json`:
 
 ```json
 {
-  "api_key": "sk-your-agentrouter-token",
+  "api_key": "",
+  "api_key_encrypted": "enc:dpapi:<encrypted value>",
   "base_url": "https://agentrouter.org",
-  "selected_model": "deepseek-v4-flash",
+  "selected_model": "gpt-6.1-sol",
   "refresh_interval_sec": 30,
   "auto_refresh_enabled": true,
   "always_on_top": true,
@@ -179,7 +182,7 @@ Pulse persists settings in `config.json`:
 }
 ```
 
-- `api_key`: Your personal AgentRouter token.
+- `api_key`: Empty on disk; the runtime decrypts `api_key_encrypted` locally with Windows DPAPI.
 - `base_url`: Gateway base URL (`https://agentrouter.org` or official mirror `https://ps.air-outer.com`).
 - `selected_model`: Currently tracked model.
 - `refresh_interval_sec`: Polling rate in seconds (15, 30, 60, 120, 300).

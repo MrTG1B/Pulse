@@ -4,56 +4,28 @@ Communicates with AgentRouter API, performs latency testing, status evaluation,
 and model discovery.
 """
 
+import sys
+import os
 import time
 import threading
 import concurrent.futures
+import hashlib
 import requests
 from typing import Dict, Any, List, Optional
-import config_manager
 
-# Officially supported / common models on AgentRouter
-CATALOG_MODELS = [
-    # Discovered & Active Models on AgentRouter (core group)
-    {
-        "id": "deepseek-v4-flash",
-        "name": "⚡ DeepSeek V4 Flash",
-        "provider": "DeepSeek",
-        "category": "uninterrupted",
-        "quota_limited": False,
-        "api_type": "openai",
-        "tag": "⚡ Active (200)"
-    },
-    {
-        "id": "claude-opus-4-8",
-        "name": "Claude Opus 4.8",
-        "provider": "Anthropic",
-        "category": "claude",
-        "quota_limited": True,
-        "api_type": "anthropic",
-        "tag": "Quota Pool"
-    },
-    {
-        "id": "claude-opus-5",
-        "name": "Claude Opus 5",
-        "provider": "Anthropic",
-        "category": "claude",
-        "quota_limited": True,
-        "api_type": "anthropic",
-        "tag": "Quota Pool"
-    },
-    {
-        "id": "gpt-6-astra",
-        "name": "GPT-6 Astra",
-        "provider": "OpenAI",
-        "category": "openai",
-        "quota_limited": True,
-        "api_type": "openai",
-        "tag": "Quota Pool"
-    }
-]
+_SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
+
+import config_manager
+import provider_updates
+
+# Live catalog populated by the background provider synchronizer.
+CATALOG_MODELS = provider_updates.CATALOG_MODELS
 
 # Cache of model test results {model_id: {"status_code": ..., "status_type": ..., "timestamp": ...}}
 MODEL_STATUS_CACHE: Dict[str, Dict[str, Any]] = {}
+MODEL_STATUS_SCOPES: Dict[str, str] = {}
 
 # Gateway health cache and lock to prevent hammering /api/status on rapid/concurrent model checks
 _GATEWAY_CACHE: Dict[str, Any] = {"timestamp": 0.0, "url": "", "data": None}
@@ -107,7 +79,7 @@ def check_gateway_health(base_url: Optional[str] = None, force_refresh: bool = F
 
             if resp.status_code == 200:
                 data = resp.json()
-                announcements = data.get("data", {}).get("announcements", [])
+                announcements = provider_updates.normalize_announcements(data.get("data", {}).get("announcements", []))
                 latest_announcement = announcements[0].get("content", "") if announcements else ""
                 version = data.get("data", {}).get("version", "online")
 
@@ -161,11 +133,25 @@ def test_model_connection(
     if not api_key or "••••" in api_key or "..." in api_key:
         api_key = config_manager.get_api_key()
     if not model_id:
-        model_id = cfg.get("selected_model", "claude-3-5-sonnet-20241022")
+        model_id = cfg.get("selected_model", "gpt-6.1-sol")
     if not base_url:
         base_url = cfg.get("base_url", "https://agentrouter.org")
 
     base_url = base_url.rstrip("/")
+
+    model_meta = provider_updates.get_model(model_id)
+    if model_meta:
+        model_id = model_meta["id"]
+    if model_meta and model_meta.get("provider_status") == "unavailable":
+        return {
+            "gateway_reachable": None, "gateway_latency_ms": 0,
+            "status_code": 0, "status_type": "unavailable",
+            "status_title": "Temporarily Unavailable",
+            "message": f"AgentRouter has temporarily taken {model_meta['name']} offline. Restoration time has not been announced.",
+            "is_quota_exhausted": False, "is_active": False,
+            "model_id": model_id, "latency_ms": 0, "timestamp": time.time(),
+            "raw_response": None,
+        }
 
     if not api_key:
         gateway_info = check_gateway_health(base_url)
@@ -185,8 +171,14 @@ def test_model_connection(
         }
 
     # Identify model api type
-    model_meta = next((m for m in CATALOG_MODELS if m["id"] == model_id), None)
-    api_type = model_meta["api_type"] if model_meta else ("anthropic" if "claude" in model_id.lower() else "openai")
+    if model_meta:
+        api_type = model_meta.get("api_type", "openai")
+    elif "claude" in model_id.lower():
+        api_type = "anthropic"
+    elif any(k in model_id.lower() for k in ("astra", "sol", "responses")):
+        api_type = "openai_responses"
+    else:
+        api_type = "openai"
 
     headers = get_auth_headers(api_key=api_key)
 
@@ -203,6 +195,12 @@ def test_model_connection(
                 "max_tokens": 1,
                 "messages": [{"role": "user", "content": "ping"}]
             }
+        elif api_type == "openai_responses":
+            endpoint = f"{base_url}/v1/responses"
+            payload = {
+                "model": model_id,
+                "input": "ping"
+            }
         else:
             endpoint = f"{base_url}/v1/chat/completions"
             payload = {
@@ -211,10 +209,24 @@ def test_model_connection(
                 "messages": [{"role": "user", "content": "ping"}]
             }
 
-        resp = requests.post(endpoint, headers=headers, json=payload, timeout=(3.0, 5.0))
+        resp = requests.post(endpoint, headers=headers, json=payload, timeout=(3.0, 8.0))
         latency_ms = int((time.time() - start_time) * 1000)
         status_code = resp.status_code
         raw_response_text = resp.text
+
+        # Self-healing fallback: if model rejected /v1/chat/completions stating it requires /v1/responses
+        if status_code == 400 and ("/v1/responses" in raw_response_text or "responses api" in raw_response_text.lower()):
+            endpoint = f"{base_url}/v1/responses"
+            payload = {
+                "model": model_id,
+                "input": "ping"
+            }
+            resp = requests.post(endpoint, headers=headers, json=payload, timeout=(3.0, 8.0))
+            latency_ms = int((time.time() - start_time) * 1000)
+            status_code = resp.status_code
+            raw_response_text = resp.text
+            if model_meta:
+                model_meta["api_type"] = "openai_responses"
 
         try:
             resp_json = resp.json()
@@ -262,12 +274,12 @@ def test_model_connection(
     elif is_quota_exhausted_detected:
         status_type = "quota_exhausted"
         status_title = "Quota Exhausted (402)"
-        message = "Budget pool quota has been exhausted. Claude & GPT models will resume at next release window."
+        message = "Budget pool quota has been exhausted. Check the current notice for this model or switch to the recommended model."
         is_quota_exhausted = True
     elif status_code == 503 or "无可用渠道" in error_message or "no available channel" in err_lower:
         status_type = "no_channel"
         status_title = "No Channel (503)"
-        message = f"Model '{model_id}' is not in your channel group. Switch to deepseek-v4-flash or click Discover."
+        message = f"Model '{model_id}' is not in your channel group. Refresh the model list or switch to the recommended model."
     elif status_code == 401:
         status_type = "unauthorized"
         if "unauthorized client" in err_lower:
@@ -280,6 +292,10 @@ def test_model_connection(
         status_type = "rate_limited"
         status_title = "Rate Limited (429)"
         message = f"Rate limit reached on AgentRouter: {error_message}"
+    elif "decryption failure" in err_lower or "cross-resource" in err_lower or "cross_resource" in err_lower:
+        status_type = "provider_maintenance"
+        status_title = "Provider Response Error"
+        message = f"The provider returned a Decryption Failure / Cross-Resource Access error for '{model_id}'. Check the latest notice before retrying."
     elif status_code == 0:
         status_type = "offline"
         status_title = "Connection Failed"
@@ -307,6 +323,7 @@ def test_model_connection(
 
     # Update cache
     MODEL_STATUS_CACHE[model_id] = result
+    MODEL_STATUS_SCOPES[model_id] = hashlib.sha256((base_url + "\0" + api_key).encode("utf-8")).hexdigest()
     return result
 
 
@@ -315,10 +332,12 @@ def get_all_models_with_status() -> List[Dict[str, Any]]:
     Returns list of all models combined with their current status from cache.
     """
     models = []
-    for m in CATALOG_MODELS:
+    for m in provider_updates.get_snapshot()["models"]:
         item = dict(m)
         cached = MODEL_STATUS_CACHE.get(m["id"])
-        if cached:
+        if m.get("provider_status") == "unavailable":
+            item.update(status_code=None, status_type="unavailable", status_title="Temporarily Unavailable", latency_ms=None, last_checked=None)
+        elif cached and MODEL_STATUS_SCOPES.get(m["id"]) == provider_updates.get_scope() and cached.get("timestamp", 0) >= m.get("policy_updated_at", 0):
             item["status_code"] = cached.get("status_code")
             item["status_type"] = cached.get("status_type")
             item["status_title"] = cached.get("status_title")
@@ -342,13 +361,11 @@ def batch_check_models(model_ids: Optional[List[str]] = None, api_key: Optional[
         api_key = config_manager.get_api_key()
 
     if not model_ids:
-        # Default test active models on AgentRouter
-        model_ids = [
-            "deepseek-v4-flash",
-            "claude-opus-4-8",
-            "claude-opus-5",
-            "gpt-6-astra"
-        ]
+        model_ids = [m["id"] for m in provider_updates.get_snapshot()["models"]
+                     if m.get("provider_status") != "unavailable" and m.get("available_in_account") is not False]
+
+    if not model_ids:
+        return {"results": {}, "models": get_all_models_with_status()}
 
     results = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=min(4, len(model_ids))) as executor:
@@ -381,73 +398,12 @@ def batch_check_models(model_ids: Optional[List[str]] = None, api_key: Optional[
 
 
 def discover_models(api_key: Optional[str] = None, base_url: Optional[str] = None) -> Dict[str, Any]:
-    """
-    Attempts to discover active/available models from AgentRouter's /v1/models endpoint.
-    Merges any newly found models into CATALOG_MODELS and returns discovery results.
-    """
-    if not api_key:
-        api_key = config_manager.get_api_key()
-    if not base_url:
-        cfg = config_manager.load_config()
-        base_url = cfg.get("base_url", "https://agentrouter.org")
-
-    base_url = base_url.rstrip("/")
-    models_url = f"{base_url}/v1/models"
-
-    headers = get_auth_headers(api_key=api_key)
-
-    discovered_ids = []
-    try:
-        resp = requests.get(models_url, headers=headers, timeout=(3.05, 7.0))
-        if resp.status_code == 200:
-            data = resp.json()
-            items = data.get("data", []) if isinstance(data, dict) else []
-            existing_ids = {m["id"] for m in CATALOG_MODELS}
-
-            for item in items:
-                mid = item.get("id")
-                if not mid:
-                    continue
-                discovered_ids.append(mid)
-                if mid not in existing_ids:
-                    mid_lower = mid.lower()
-                    is_uninterrupted = any(k in mid_lower for k in ("deepseek", "glm", "qwen", "kimi", "moonshot"))
-                    is_claude = "claude" in mid_lower
-                    provider = "Anthropic" if is_claude else ("DeepSeek" if "deepseek" in mid_lower else ("Zhipu AI" if "glm" in mid_lower else "OpenAI"))
-
-                    CATALOG_MODELS.append({
-                        "id": mid,
-                        "name": mid,
-                        "provider": provider,
-                        "category": "uninterrupted" if is_uninterrupted else ("claude" if is_claude else "openai"),
-                        "quota_limited": not is_uninterrupted,
-                        "api_type": "anthropic" if is_claude else "openai",
-                        "tag": "⚡ Always Active" if is_uninterrupted else "Quota Pool",
-                        "discovered": True
-                    })
-                    existing_ids.add(mid)
-
-            return {
-                "success": True,
-                "count": len(discovered_ids),
-                "discovered_ids": discovered_ids,
-                "message": f"Discovered {len(discovered_ids)} models from AgentRouter.",
-                "models": get_all_models_with_status()
-            }
-        else:
-            return {
-                "success": False,
-                "count": 0,
-                "discovered_ids": [],
-                "status_code": resp.status_code,
-                "message": f"Discovery returned HTTP {resp.status_code}. Using built-in catalog.",
-                "models": get_all_models_with_status()
-            }
-    except Exception as e:
-        return {
-            "success": False,
-            "count": 0,
-            "discovered_ids": [],
-            "message": f"Discovery request failed: {e}. Using built-in catalog.",
-            "models": get_all_models_with_status()
-        }
+    """Refresh provider metadata and reconcile the live account model catalog."""
+    snapshot = provider_updates.refresh(api_key=api_key, base_url=base_url)
+    ids = [m["id"] for m in snapshot["models"] if m.get("provider_status") != "unavailable"
+           and m.get("available_in_account") is not False]
+    return {
+        "success": not snapshot["models_stale"], "count": len(ids), "discovered_ids": ids,
+        "message": snapshot["error"] or f"Discovered {len(ids)} models from AgentRouter.",
+        "models": get_all_models_with_status(), "provider": snapshot,
+    }

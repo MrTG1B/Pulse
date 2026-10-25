@@ -1,20 +1,18 @@
-"""
-Pulse — GitHub Release & Asset Publisher.
-Creates a GitHub Release and uploads the standalone Pulse.exe binary asset.
-Uses Git Credential Manager or GITHUB_TOKEN environment variable for authentication.
-"""
+"""Publish the verified Windows executable as a new GitHub release asset."""
 
-import os
-import sys
+import argparse
 import hashlib
+import os
 import subprocess
+import sys
+
 import requests
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXE_PATH = os.path.join(ROOT_DIR, "dist", "Pulse.exe")
 REPO = "MrTG1B/Pulse"
-TAG_NAME = "v1.0.0"
-RELEASE_TITLE = "Pulse v1.0.0 — Standalone Release for Windows"
+TAG_NAME = "v1.1.0"
+RELEASE_TITLE = "Pulse v1.1.0 — Automatic AgentRouter Updates & Usage"
 
 
 def get_github_token() -> str:
@@ -42,161 +40,100 @@ def get_github_token() -> str:
 
 
 def compute_sha256(filepath: str) -> str:
-    """Computes SHA256 checksum of a file."""
-    h = hashlib.sha256()
-    with open(filepath, "rb") as f:
-        while chunk := f.read(65536):
-            h.update(chunk)
-    return h.hexdigest().upper()
+    digest = hashlib.sha256()
+    with open(filepath, "rb") as handle:
+        for chunk in iter(lambda: handle.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def get_release_notes(sha256: str, size_mb: float) -> str:
-    return f"""## Pulse v1.0.0 — Standalone Desktop Release for Windows
+    return f"""Pulse now automatically follows AgentRouter's current model catalog and dated supply announcements.
 
-**Pulse** is a lightweight, always-on-top availability monitor and quota tracker for developers using [AgentRouter](https://agentrouter.org) with Claude Code and Codex.
+- Claude Opus 5.5 is temporarily unavailable; Astra is unlimited; Sol is unlimited, recommended, and displays its live base multiplier.
+- Models, pricing and notices refresh in the background every five minutes. Sync Now refreshes immediately; failed refreshes keep visibly stale cached data.
+- The picker, help panels and quota countdowns update with provider policies. Unlimited and unavailable models have no quota refill timer or automatic release trigger.
+- API-key credit usage and caps are displayed when reported. Recent per-model input/output tokens are shown when logs are returned. Unreported account balances and shared model pool quotas remain unknown.
+- Includes the current desktop window recovery, single-instance restoration, and optional Codex/Claude Code focus controls with Gemini gating.
 
-### 🚀 What's New in v1.0.0
+Download Pulse.exe and run it on Windows 10/11. API keys remain encrypted locally with Windows DPAPI.
 
-- **Standalone Single-File Executable (`Pulse.exe`)**:
-  - Zero dependencies or Python runtime required.
-  - Runs cleanly without any terminal or console window popup (`--noconsole`).
-  - Embedded Windows version metadata, multi-resolution app icon, and static web assets.
-  - Portable configuration: settings and API keys are stored safely in `config.json` next to the executable.
-
-- **4 Core Active AgentRouter Models**:
-  - `deepseek-v4-flash` — ⚡ Always Active (Uninterrupted 200 OK)
-  - `claude-opus-4-8` — ⏱️ Quota Pool (10:00 & 19:00 CST Daily Release)
-  - `claude-opus-5` — ⏱️ Quota Pool (10:00 & 19:00 CST Daily Release)
-  - `gpt-6-astra` — ⏱️ Quota Pool (10:00 & 19:00 CST Daily Release)
-
-- **Beijing Daily Quota Countdown & Local Timezone Conversion**:
-  - Tracks the exact Beijing replenishment cycles (10:00 AM & 07:00 PM CST / 02:00 & 11:00 UTC).
-  - Translates drop times into local user timezone (e.g. `07:30 AM & 04:30 PM IST`).
-  - Subtle audio chime upon quota replenishment.
-
-- **FinTech Dark Mode & Smooth Scrolling UI**:
-  - Premium high-contrast palette (`#0A0A0A` background, `#B8FF3D` neon lime accent).
-  - Compact mini-dock mode (`390×100px`) and Always-on-Top pin.
-  - Smooth multi-input scrolling (mouse wheel, keyboard navigation, touch drag).
-
----
-
-### 📦 Binary Asset Details
-
-| File Name | Platform | Size | SHA256 Checksum |
-| :--- | :--- | :--- | :--- |
-| **`Pulse.exe`** | Windows 10 / 11 (x64) | {size_mb:.2f} MB | `{sha256}` |
-
-### 🛠️ Quick Start
-1. Download `Pulse.exe` from the Assets below.
-2. Double-click `Pulse.exe` to launch. No installer needed!
-3. Enter your AgentRouter API key (`sk-...`) in the top bar to start monitoring.
+Binary size: {size_mb:.2f} MB
+SHA256: `{sha256}`
 """
 
 
-def publish():
-    print("=" * 65)
-    print(" Pulse — GitHub Release & Asset Publisher")
-    print(f" Target Repository: {REPO}")
-    print(f" Release Tag:       {TAG_NAME}")
-    print("=" * 65)
-
-    if not os.path.exists(EXE_PATH):
-        print(f"[Error] Executable not found at {EXE_PATH}")
-        print("Please build Pulse.exe first using `python scripts/build_exe.py`.")
+def publish(dry_run=False, target_commit=None):
+    if not os.path.isfile(EXE_PATH):
+        print(f"Executable not found: {EXE_PATH}")
         return 1
-
+    target_commit = target_commit or subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT_DIR, text=True).strip()
+    size = os.path.getsize(EXE_PATH)
+    checksum = compute_sha256(EXE_PATH)
+    notes = get_release_notes(checksum, size / (1024 * 1024))
+    print(f"Release: {TAG_NAME}; target: {target_commit}; size: {size}; SHA256: {checksum}")
+    if dry_run:
+        print(notes)
+        return 0
     token = get_github_token()
     if not token:
-        print("[Error] No GitHub authentication token found.")
-        print("Set GITHUB_TOKEN environment variable or authenticate via Git Credential Manager.")
+        print("GitHub credentials are unavailable.")
         return 1
-
-    size_bytes = os.path.getsize(EXE_PATH)
-    size_mb = size_bytes / (1024 * 1024)
-    sha256 = compute_sha256(EXE_PATH)
-    print(f"[Binary] Found Pulse.exe: {size_mb:.2f} MB ({size_bytes:,} bytes)")
-    print(f"[Binary] SHA256: {sha256}")
-
-    headers = {
-        "Authorization": f"token {token}",
-        "Accept": "application/vnd.github.v3+json",
-        "User-Agent": "Pulse-Release-Publisher/1.0"
-    }
-
-    # 1. Check if release already exists
-    print(f"\n[1/3] Checking if release '{TAG_NAME}' exists on GitHub...")
-    r = requests.get(f"https://api.github.com/repos/{REPO}/releases/tags/{TAG_NAME}", headers=headers)
-    release = None
-    if r.status_code == 200:
-        release = r.json()
-        print(f"[GitHub] Existing release found (ID: {release['id']})")
-    elif r.status_code == 404:
-        print(f"[GitHub] Release '{TAG_NAME}' does not exist yet. Creating release...")
-        payload = {
-            "tag_name": TAG_NAME,
-            "target_commitish": "main",
-            "name": RELEASE_TITLE,
-            "body": get_release_notes(sha256, size_mb),
-            "draft": False,
-            "prerelease": False
-        }
-        create_res = requests.post(f"https://api.github.com/repos/{REPO}/releases", headers=headers, json=payload)
-        if create_res.status_code in (200, 201):
-            release = create_res.json()
-            print(f"[GitHub] Release created successfully! (ID: {release['id']})")
-        else:
-            print(f"[Error] Failed to create release: {create_res.status_code} - {create_res.text}")
+    session = requests.Session()
+    session.headers.update({"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
+                            "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "Pulse-Release-Publisher"})
+    api = f"https://api.github.com/repos/{REPO}/releases"
+    tag_commit = session.get(f"https://api.github.com/repos/{REPO}/commits/{TAG_NAME}", timeout=(8, 20))
+    if tag_commit.status_code == 200 and tag_commit.json().get("sha") != target_commit:
+        print("The release tag points to a different commit; it has been preserved.")
+        return 1
+    if tag_commit.status_code not in (200, 404):
+        print(f"Release tag lookup failed: HTTP {tag_commit.status_code}")
+        return 1
+    existing = session.get(f"{api}/tags/{TAG_NAME}", timeout=(8, 20))
+    if existing.status_code == 200:
+        release = existing.json()
+        for asset in release.get("assets", []):
+            if asset.get("name") == "Pulse.exe":
+                if asset.get("digest") == f"sha256:{checksum}" and asset.get("size") == size:
+                    print(f"Matching asset already published: {asset['browser_download_url']}")
+                    return 0
+                print("An existing Pulse.exe asset differs; it has been preserved.")
+                return 1
+    elif existing.status_code == 404:
+        created = session.post(api, json={"tag_name": TAG_NAME, "target_commitish": target_commit,
+                                         "name": RELEASE_TITLE, "body": notes, "draft": True, "prerelease": False}, timeout=(8, 20))
+        if created.status_code != 201:
+            print(f"Release creation failed: HTTP {created.status_code}")
             return 1
+        release = created.json()
     else:
-        print(f"[Error] Failed to query releases: {r.status_code} - {r.text}")
+        print(f"Release lookup failed: HTTP {existing.status_code}")
         return 1
-
-    release_id = release["id"]
-
-    # 2. Check existing assets for Pulse.exe
-    print(f"\n[2/3] Checking existing release assets...")
-    assets_res = requests.get(f"https://api.github.com/repos/{REPO}/releases/{release_id}/assets", headers=headers)
-    if assets_res.status_code == 200:
-        for asset in assets_res.json():
-            if asset["name"] == "Pulse.exe":
-                print(f"[GitHub] Existing Pulse.exe asset found (ID: {asset['id']}). Deleting old asset...")
-                del_res = requests.delete(f"https://api.github.com/repos/{REPO}/releases/assets/{asset['id']}", headers=headers)
-                if del_res.status_code == 204:
-                    print("[GitHub] Old asset deleted.")
-                else:
-                    print(f"[Warning] Could not delete old asset: {del_res.status_code}")
-
-    # 3. Upload Pulse.exe asset
-    print(f"\n[3/3] Uploading Pulse.exe ({size_mb:.2f} MB) to GitHub Release...")
-    upload_url = release.get("upload_url", "").split("{")[0]
-    upload_url = f"{upload_url}?name=Pulse.exe"
-
-    upload_headers = {
-        "Authorization": f"token {token}",
-        "Content-Type": "application/vnd.microsoft.portable-executable",
-        "Accept": "application/vnd.github.v3+json",
-        "User-Agent": "Pulse-Release-Publisher/1.0"
-    }
-
-    with open(EXE_PATH, "rb") as f:
-        upload_res = requests.post(upload_url, headers=upload_headers, data=f)
-
-    if upload_res.status_code in (200, 201):
-        asset_data = upload_res.json()
-        download_url = asset_data.get("browser_download_url")
-        print("=" * 65)
-        print(" Successfully Uploaded Release Asset!")
-        print(f" Release URL:  {release.get('html_url')}")
-        print(f" Download URL: {download_url}")
-        print(f" Asset Size:   {size_mb:.2f} MB")
-        print(f" SHA256:       {sha256}")
-        print("=" * 65)
-        return 0
-    else:
-        print(f"[Error] Failed to upload asset: {upload_res.status_code} - {upload_res.text}")
+    upload_url = release["upload_url"].split("{")[0]
+    with open(EXE_PATH, "rb") as handle:
+        uploaded = session.post(upload_url, params={"name": "Pulse.exe"}, data=handle,
+                                headers={"Content-Type": "application/vnd.microsoft.portable-executable"}, timeout=(10, 180))
+    if uploaded.status_code != 201:
+        print(f"Asset upload failed: HTTP {uploaded.status_code}; draft retained.")
         return 1
+    asset = uploaded.json()
+    if asset.get("size") != size or (asset.get("digest") and asset["digest"] != f"sha256:{checksum}"):
+        print("Uploaded asset verification failed; draft retained.")
+        return 1
+    published = session.patch(f"{api}/{release['id']}", json={"draft": False}, timeout=(8, 20))
+    if published.status_code != 200:
+        print(f"Release publication failed: HTTP {published.status_code}; uploaded draft retained.")
+        return 1
+    print(f"Release URL: {published.json()['html_url']}")
+    print(f"Download URL: {asset['browser_download_url']}")
+    print("VERDICT: PASS")
+    return 0
 
 
 if __name__ == "__main__":
-    sys.exit(publish())
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--target-commit")
+    args = parser.parse_args()
+    sys.exit(publish(dry_run=args.dry_run, target_commit=args.target_commit))

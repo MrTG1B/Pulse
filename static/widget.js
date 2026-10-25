@@ -13,7 +13,7 @@
     maskedApiKey: '',
     hasApiKey: false,
     isKeyRevealed: false,
-    selectedModel: 'deepseek-v4-flash',
+    selectedModel: 'gpt-6.1-sol',
     baseUrl: 'https://agentrouter.org',
     autoRefresh: true,
     refreshInterval: 30, // seconds
@@ -28,10 +28,15 @@
     isPinned: true,
     soundEnabled: true,
     activeModelFilter: 'all',
+    provider: null,
+    isSyncing: false,
+    isDiscovering: false,
+    accountRevision: 0,
     models: []
   };
 
   let autoRefreshTimer = null;
+  let providerRefreshTimer = null;
   let countdownTimer = null;
   let elapsedTimer = null;
 
@@ -79,9 +84,23 @@
     latencyText: document.getElementById('latencyText'),
     statusMessage: document.getElementById('statusMessage'),
     statusActionRow: document.getElementById('statusActionRow'),
-    btnSwitchDeepSeek: document.getElementById('btnSwitchDeepSeek'),
+    btnSwitchRecommended: document.getElementById('btnSwitchRecommended'),
 
     // Countdown Card
+    countdownCard: document.getElementById('countdownCard'),
+    scheduleTitle: document.getElementById('scheduleTitle'),
+    supplyMessage: document.getElementById('supplyMessage'),
+    providerSyncStatus: document.getElementById('providerSyncStatus'),
+    usedCredits: document.getElementById('usedCredits'),
+    remainingKeyCredit: document.getElementById('remainingKeyCredit'),
+    usageStatus: document.getElementById('usageStatus'),
+    modelUsageList: document.getElementById('modelUsageList'),
+    officialNoticeText: document.getElementById('officialNoticeText'),
+    officialNoticeDate: document.getElementById('officialNoticeDate'),
+    noticeHistory: document.getElementById('noticeHistory'),
+    helpOfficialNoticeText: document.getElementById('helpOfficialNoticeText'),
+    helpScheduleSummary: document.getElementById('helpScheduleSummary'),
+    helpModelsList: document.getElementById('helpModelsList'),
     batchPill: document.getElementById('batchPill'),
     cntHours: document.getElementById('cntHours'),
     cntMinutes: document.getElementById('cntMinutes'),
@@ -117,6 +136,13 @@
     settingTimezone: document.getElementById('settingTimezone'),
     settingAlwaysOnTop: document.getElementById('settingAlwaysOnTop'),
     settingChime: document.getElementById('settingChime'),
+    settingSchedulerEnabled: document.getElementById('settingSchedulerEnabled'),
+    settingPressEnter: document.getElementById('settingPressEnter'),
+    settingGeminiKey: document.getElementById('settingGeminiKey'),
+    btnSaveGeminiKey: document.getElementById('btnSaveGeminiKey'),
+    btnScanWindows: document.getElementById('btnScanWindows'),
+    btnManualTrigger: document.getElementById('btnManualTrigger'),
+    focusTriggerResult: document.getElementById('focusTriggerResult'),
     btnCloseSettingsModal: document.getElementById('btnCloseSettingsModal'),
     btnModalClose: document.getElementById('btnModalClose'),
 
@@ -182,6 +208,7 @@
     }
     try {
       startElapsedTimer();
+      startProviderRefresh();
     } catch (e) {
       console.error('startElapsedTimer error:', e);
     }
@@ -235,9 +262,10 @@
 
     // Model Change
     if (el.modelSelect) el.modelSelect.addEventListener('change', onModelSelected);
-    if (el.btnSwitchDeepSeek) {
-      el.btnSwitchDeepSeek.addEventListener('click', () => {
-        const targetId = 'deepseek-v4-flash';
+    if (el.btnSwitchRecommended) {
+      el.btnSwitchRecommended.addEventListener('click', () => {
+        const targetId = el.btnSwitchRecommended.dataset.modelId;
+        if (!targetId) return;
         if (el.modelSelect) el.modelSelect.value = targetId;
         onModelSelected();
       });
@@ -289,7 +317,8 @@
     if (el.settingBaseUrl) {
       el.settingBaseUrl.addEventListener('change', (e) => {
         state.baseUrl = e.target.value;
-        saveConfigToServer({ base_url: state.baseUrl });
+        state.accountRevision += 1;
+        saveConfigToServer({ base_url: state.baseUrl }).then(() => discoverModels());
       });
     }
     if (el.settingTimezone) el.settingTimezone.addEventListener('change', onTimezoneSettingChange);
@@ -309,6 +338,82 @@
         if (el.soundIcon) el.soundIcon.textContent = state.soundEnabled ? '🔔' : '🔕';
         saveConfigToServer({ sound_alert_enabled: state.soundEnabled });
         if (state.soundEnabled) playChime();
+      });
+    }
+
+    // Auto-Focus Scheduler Controls
+    if (el.settingSchedulerEnabled) {
+      el.settingSchedulerEnabled.addEventListener('change', async (e) => {
+        try {
+          await fetch('/api/scheduler/toggle', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: e.target.checked })
+          });
+        } catch (err) {
+          console.warn('Failed to toggle scheduler:', err);
+        }
+      });
+    }
+
+    if (el.settingPressEnter) {
+      el.settingPressEnter.addEventListener('change', (e) => {
+        saveConfigToServer({ scheduler_press_enter: e.target.checked });
+      });
+    }
+
+    if (el.btnSaveGeminiKey) {
+      el.btnSaveGeminiKey.addEventListener('click', async () => {
+        const key = el.settingGeminiKey ? el.settingGeminiKey.value.trim() : '';
+        if (!key) return;
+        try {
+          await saveConfigToServer({ gemini_api_key: key, gemini_enabled: true });
+          if (el.focusTriggerResult) {
+            el.focusTriggerResult.textContent = '✅ Gemini 3.8 key saved & enabled.';
+          }
+          if (el.settingGeminiKey) el.settingGeminiKey.value = '';
+        } catch (err) {
+          if (el.focusTriggerResult) {
+            el.focusTriggerResult.textContent = '❌ Failed to save Gemini key.';
+          }
+        }
+      });
+    }
+
+    if (el.btnScanWindows) {
+      el.btnScanWindows.addEventListener('click', async () => {
+        if (el.focusTriggerResult) el.focusTriggerResult.textContent = '🔍 Scanning for open Codex & Claude Code apps...';
+        try {
+          const res = await fetch('/api/focus/scan');
+          const data = await res.json();
+          if (data.count === 0) {
+            if (el.focusTriggerResult) el.focusTriggerResult.textContent = '❌ Neither Codex nor Claude Code is currently open.';
+          } else {
+            const list = data.found.map(w => `${w.app === 'codex' ? '🤖 Codex' : '🧠 Claude Code'}: "${w.title}"`).join(' • ');
+            if (el.focusTriggerResult) el.focusTriggerResult.textContent = `✅ Found ${data.count} app(s): ${list}`;
+          }
+        } catch (err) {
+          if (el.focusTriggerResult) el.focusTriggerResult.textContent = '⚠️ Scan error: ' + err.message;
+        }
+      });
+    }
+
+    if (el.btnManualTrigger) {
+      el.btnManualTrigger.addEventListener('click', async () => {
+        if (el.focusTriggerResult) el.focusTriggerResult.textContent = '⚡ Focusing app and pressing Enter...';
+        const pressEnter = el.settingPressEnter ? el.settingPressEnter.checked : true;
+        try {
+          const res = await fetch('/api/focus/trigger', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ press_enter: pressEnter })
+          });
+          const data = await res.json();
+          const message = data.ai_message || data.message || 'Complete.';
+          if (el.focusTriggerResult) el.focusTriggerResult.textContent = message;
+        } catch (err) {
+          if (el.focusTriggerResult) el.focusTriggerResult.textContent = '⚠️ Trigger error: ' + err.message;
+        }
       });
     }
 
@@ -335,64 +440,33 @@
 
   // --- Load Initial Data ---
   async function loadInitialData() {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     try {
-      // 1. Fetch initial status & schedule with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
-      const res = await fetch('/api/status', { signal: controller.signal });
-      clearTimeout(timeoutId);
-      const data = await res.json();
-
-      if (data.config) {
-        state.hasApiKey = data.config.has_api_key;
-        state.maskedApiKey = data.config.masked_api_key || '';
-        state.selectedModel = data.config.selected_model || state.selectedModel;
-        state.refreshInterval = data.config.refresh_interval_sec || 30;
-        state.autoRefresh = data.config.auto_refresh_enabled !== false;
-        state.isPinned = data.config.always_on_top !== false;
-        state.baseUrl = data.config.base_url || 'https://agentrouter.org';
-
-        el.chkAutoRefresh.checked = state.autoRefresh;
-        el.selInterval.value = String(state.refreshInterval);
-        el.btnPin.classList.toggle('active', state.isPinned);
-        updateKeyDisplay();
-      }
-
-      // Verify masked API key metadata
-      if (state.hasApiKey) {
-        try {
-          const kr = await fetch('/api/config/key');
-          const kd = await kr.json();
-          if (kd.masked_api_key) state.maskedApiKey = kd.masked_api_key;
-        } catch (e) {}
-      }
-
-      if (data.schedule) {
-        updateScheduleData(data.schedule);
-      }
-
-      // 2. Fetch models & discover user's active channel models
-      await fetchModels();
-      if (state.hasApiKey) {
-        try {
-          await discoverModels();
-        } catch (e) {}
-      }
-
-      // If default model is claude-3-5-sonnet-20241022 (no channel) but deepseek-v4-flash is discovered, use it
-      if (state.models.some(m => m.id === 'deepseek-v4-flash') && (!state.selectedModel || state.selectedModel === 'claude-3-5-sonnet-20241022')) {
-        state.selectedModel = 'deepseek-v4-flash';
-        el.modelSelect.value = 'deepseek-v4-flash';
-      }
-
-      // 3. Run initial test
+      const res = await fetch('/api/config', { signal: controller.signal });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const cfg = await res.json();
+      state.hasApiKey = cfg.has_api_key;
+      state.maskedApiKey = cfg.masked_api_key || '';
+      state.selectedModel = cfg.selected_model || state.selectedModel;
+      state.refreshInterval = cfg.refresh_interval_sec || 30;
+      state.autoRefresh = cfg.auto_refresh_enabled !== false;
+      state.isPinned = cfg.always_on_top !== false;
+      state.soundEnabled = cfg.sound_alert_enabled !== false;
+      state.userOffsetMinutes = cfg.user_timezone_offset ?? 330;
+      state.baseUrl = cfg.base_url || 'https://agentrouter.org';
+      el.chkAutoRefresh.checked = state.autoRefresh;
+      el.selInterval.value = String(state.refreshInterval);
+      el.btnPin.classList.toggle('active', state.isPinned);
+      if (el.soundIcon) el.soundIcon.textContent = state.soundEnabled ? '🔔' : '🔕';
+      updateKeyDisplay();
+      await refreshProviderData();
       await testConnection(false);
-
     } catch (err) {
       console.warn('Initial load error:', err);
-      // Fallback local schedule computation
       computeLocalSchedule();
-      await fetchModels();
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
@@ -453,6 +527,7 @@
       });
       const data = await res.json();
       state.hasApiKey = data.has_api_key;
+      state.accountRevision += 1;
       state.maskedApiKey = data.masked_api_key;
       state.apiKey = '';
 
@@ -461,7 +536,7 @@
       el.inputApiKey.value = '';
       if (el.settingApiKey) el.settingApiKey.value = '';
 
-      // Test connection immediately with new key
+      await discoverModels();
       testConnection(true);
     } catch (e) {
       alert('Failed to save API key: ' + e.message);
@@ -486,6 +561,7 @@
       });
       const data = await res.json();
       state.hasApiKey = false;
+      state.accountRevision += 1;
       state.maskedApiKey = '';
       state.apiKey = '';
       state.isKeyRevealed = false;
@@ -503,73 +579,53 @@
   function updateScheduleData(schedule) {
     if (!schedule) return;
     state.currentSchedule = schedule;
-    state.nextSlotUtc = new Date(schedule.next_slot_utc);
-    state.prevSlotUtc = new Date(schedule.prev_slot_utc);
-    if (schedule.user_offset_minutes !== undefined) {
-      state.userOffsetMinutes = schedule.user_offset_minutes;
+    state.nextSlotUtc = schedule.enabled && schedule.next_slot_utc ? new Date(schedule.next_slot_utc) : null;
+    state.prevSlotUtc = schedule.enabled && schedule.prev_slot_utc ? new Date(schedule.prev_slot_utc) : null;
+    if (schedule.user_offset_minutes !== undefined) state.userOffsetMinutes = schedule.user_offset_minutes;
+    if (el.countdownCard) el.countdownCard.classList.toggle('no-schedule', !schedule.enabled);
+    if (el.scheduleTitle) el.scheduleTitle.textContent = schedule.enabled ? 'NEXT QUOTA RELEASE' : (schedule.availability_title || 'No published schedule').toUpperCase();
+    if (el.supplyMessage) el.supplyMessage.textContent = schedule.schedule_message || '';
+    if (el.helpScheduleSummary) el.helpScheduleSummary.textContent = schedule.enabled ? `Next quota release: ${schedule.local_display}. Daily slots: ${schedule.daily_schedule_local}.` : (schedule.schedule_message || 'No published quota schedule.');
+    if (el.batchPill) el.batchPill.textContent = schedule.enabled ? `Batch ${schedule.batch_number}` : schedule.supply_status === 'unlimited' ? 'All day' : 'No timer';
+    if (el.localTimeDisplay) el.localTimeDisplay.textContent = schedule.local_display || '';
+    if (el.beijingRefTime) el.beijingRefTime.textContent = schedule.daily_schedule_beijing ? `Beijing: ${schedule.daily_schedule_beijing}` : '';
+    if (el.utcRefTime) el.utcRefTime.textContent = schedule.daily_schedule_utc || '';
+    if (el.dailyScheduleTimes) el.dailyScheduleTimes.textContent = schedule.daily_schedule_local || 'No scheduled refill';
+    if (el.compactLocalTime) el.compactLocalTime.textContent = schedule.enabled ? `(${schedule.local_time} ${schedule.user_timezone || ''})` : 'No scheduled refill';
+    if (!schedule.enabled) {
+      if (el.compactCountdown) el.compactCountdown.textContent = schedule.supply_status === 'unlimited' ? 'ALL DAY' : 'NO TIMER';
+      if (el.cycleProgressBar) el.cycleProgressBar.style.width = '0%';
+      state.hasTriggeredChimeForSlot = false;
     }
-
-    if (el.batchPill && schedule.batch_number) {
-      el.batchPill.textContent = `Batch ${schedule.batch_number}`;
-    }
-    if (el.localTimeDisplay && schedule.local_display) {
-      el.localTimeDisplay.textContent = schedule.local_display;
-    }
-    if (el.beijingRefTime && schedule.daily_schedule_beijing) {
-      el.beijingRefTime.textContent = `Beijing: ${schedule.daily_schedule_beijing}`;
-    }
-    if (el.utcRefTime && schedule.daily_schedule_utc) {
-      el.utcRefTime.textContent = schedule.daily_schedule_utc;
-    }
-    if (el.dailyScheduleTimes && schedule.daily_schedule_local) {
-      el.dailyScheduleTimes.textContent = schedule.daily_schedule_local;
-    }
-
-    if (el.compactLocalTime && schedule.local_time) {
-      const tz = schedule.user_timezone || 'IST';
-      el.compactLocalTime.textContent = `(${schedule.local_time} ${tz})`;
-    }
-
     tickCountdown();
   }
 
   function computeLocalSchedule() {
-    // Pure frontend calculation fallback
+    const model = state.models.find(m => canonicalModelKey(m.id) === canonicalModelKey(state.selectedModel));
+    const slots = model && model.provider_status === 'limited' && model.available_in_account !== false ? model.release_minutes_utc || [] : [];
+    if (!slots.length) {
+      const status = model ? model.provider_status : 'unknown';
+      const labels = { unlimited: 'Unlimited · all day', unavailable: 'Temporarily unavailable', limited: 'Release time not announced' };
+      const messages = {
+        unlimited: 'No scheduled quota refill is needed. Test your token to confirm access.',
+        unavailable: 'AgentRouter has not announced a restoration time.',
+        limited: 'Limited supply. Wait for AgentRouter to publish a release time.'
+      };
+      updateScheduleData({ enabled: false, supply_status: status, availability_title: labels[status] || 'No published schedule', schedule_message: messages[status] || 'No quota release schedule has been announced for this model.' });
+      return;
+    }
     const now = new Date();
-    const candidateHoursUtc = [2, 11];
-    let candidates = [];
-
-    for (let dayOffset of [-1, 0, 1, 2]) {
-      for (let h of candidateHoursUtc) {
-        const d = new Date(Date.UTC(
-          now.getUTCFullYear(),
-          now.getUTCMonth(),
-          now.getUTCDate() + dayOffset,
-          h, 0, 0
-        ));
-        candidates.push(d);
+    const candidates = [];
+    for (const dayOffset of [-1, 0, 1, 2]) {
+      for (const slot of slots) {
+        candidates.push(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + dayOffset, Math.floor(slot / 60), slot % 60)));
       }
     }
     candidates.sort((a, b) => a - b);
-
-    const nextSlot = candidates.find(c => c > now) || new Date(now.getTime() + 4 * 3600 * 1000);
-    const pastSlots = candidates.filter(c => c <= now);
-    const prevSlot = pastSlots[pastSlots.length - 1] || new Date(nextSlot.getTime() - 9 * 3600 * 1000);
-
-    state.nextSlotUtc = nextSlot;
-    state.prevSlotUtc = prevSlot;
-
-    if (el.batchPill) {
-      const isMorning = nextSlot.getUTCHours() === 2;
-      el.batchPill.textContent = isMorning ? 'Batch 1' : 'Batch 2';
-    }
-    if (el.beijingRefTime) el.beijingRefTime.textContent = 'Beijing: 10:00 & 19:00 (Beijing Time / UTC+8)';
-    if (el.utcRefTime) el.utcRefTime.textContent = '02:00 & 11:00 UTC';
-    if (el.dailyScheduleTimes) el.dailyScheduleTimes.textContent = '07:30 AM & 04:30 PM (IST)';
-
-    // Format local time for user's timezone (UTC+05:30)
-    formatLocalTimeDisplay(nextSlot);
-    tickCountdown();
+    const next = candidates.find(c => c > now);
+    const previous = candidates.filter(c => c <= now).pop();
+    updateScheduleData({ enabled: true, supply_status: 'limited', next_slot_utc: next.toISOString(), prev_slot_utc: previous.toISOString(), batch_number: slots.indexOf(next.getUTCHours() * 60 + next.getUTCMinutes()) + 1 });
+    formatLocalTimeDisplay(next);
   }
 
   function formatLocalTimeDisplay(dateUtc) {
@@ -601,7 +657,7 @@
   }
 
   function tickCountdown() {
-    if (!state.nextSlotUtc) return;
+    if (!state.currentSchedule?.enabled || !state.nextSlotUtc) return;
 
     const now = Date.now();
     const target = state.nextSlotUtc.getTime();
@@ -614,7 +670,7 @@
         playChime();
         // Reload schedule and run test connection
         setTimeout(() => {
-          loadInitialData();
+          refreshProviderData().then(() => testConnection(false));
         }, 1500);
       }
     } else {
@@ -656,6 +712,8 @@
   // --- Connection Diagnostics ---
   async function testConnection(manual = false) {
     if (state.isTesting) return;
+    const model = state.models.find(m => m.id === state.selectedModel);
+    if (!state.selectedModel || (model && !modelSelectable(model))) return;
     state.isTesting = true;
 
     el.spinnerIcon.classList.add('spinning');
@@ -663,8 +721,9 @@
     if (el.btnTestConnection) el.btnTestConnection.disabled = true;
 
     const selectedModel = el.modelSelect.value || state.selectedModel;
+    const accountRevision = state.accountRevision;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
 
     try {
       const res = await fetch('/api/check', {
@@ -679,6 +738,9 @@
       clearTimeout(timeoutId);
 
       const data = await res.json();
+      if (selectedModel !== state.selectedModel || accountRevision !== state.accountRevision) return;
+      const current = state.models.find(m => m.id === selectedModel);
+      if (current && !modelSelectable(current)) return;
       applyTestResult(data);
 
       state.lastCheckedTimestamp = Date.now();
@@ -697,7 +759,7 @@
         status_type: 'offline',
         status_title: isTimeout ? 'Check Timed Out' : 'Connection Failed',
         message: isTimeout
-          ? 'Diagnostic request timed out after 8s. Gateway may be busy or unreachable.'
+          ? 'Diagnostic request timed out after 25s. Gateway may be busy or unreachable.'
           : 'Could not connect to local server or AgentRouter gateway: ' + (err.message || ''),
         latency_ms: 0,
         is_active: false,
@@ -748,6 +810,13 @@
       el.compactStatusText.textContent = '402 QUOTA EMPTY';
       el.compactStatusText.style.color = 'var(--status-exhausted)';
       if (el.statusActionRow) el.statusActionRow.style.display = 'flex';
+    } else if (statusType === 'unavailable') {
+      el.headerPulseDot.style.backgroundColor = 'var(--status-exhausted)';
+      el.headerPulseDot.style.boxShadow = 'none';
+      el.compactStatusDot.style.backgroundColor = 'var(--status-exhausted)';
+      el.compactStatusText.textContent = 'TEMPORARILY UNAVAILABLE';
+      el.compactStatusText.style.color = 'var(--status-exhausted)';
+      if (el.statusActionRow) el.statusActionRow.style.display = 'flex';
     } else if (statusType === 'no_channel' || data.status_code === 503) {
       el.headerPulseDot.style.backgroundColor = 'var(--status-scheduled)';
       el.headerPulseDot.style.boxShadow = '0 0 10px var(--status-scheduled-glow)';
@@ -785,160 +854,245 @@
       if (el.statusActionRow) el.statusActionRow.style.display = 'none';
     }
 
+    updateFallbackButton();
     // Refresh model list status badge
     updateModelInOverview(data.model_id, statusType, latency);
   }
 
   // --- Model Overview & Selection ---
-  async function fetchModels() {
+  function canonicalModelKey(id) {
+    return String(id || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  function modelSelectable(model) {
+    return model.provider_status !== 'unavailable' && model.available_in_account !== false;
+  }
+
+  async function refreshProviderData() {
+    if (state.isSyncing) return;
+    state.isSyncing = true;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     try {
-      const res = await fetch('/api/models');
+      const params = new URLSearchParams({ model: state.selectedModel || '', offset: String(state.userOffsetMinutes) });
+      const res = await fetch(`/api/provider?${params}`, { signal: controller.signal });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      state.models = data.models || [];
-      renderModelSelectOptions();
-      renderModelsOverview();
-    } catch (e) {
-      console.warn('Failed to load models:', e);
+      if (data.base_url.replace(/\/$/, '') !== state.baseUrl.replace(/\/$/, '')) return;
+      await applyProviderData(data);
+    } catch (error) {
+      if (el.providerSyncStatus) {
+        el.providerSyncStatus.textContent = 'Provider sync unavailable · keeping cached data and retrying automatically';
+        el.providerSyncStatus.classList.add('stale');
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      state.isSyncing = false;
     }
+  }
+
+  async function applyProviderData(data) {
+    state.provider = data;
+    state.models = data.models || [];
+    const previous = state.selectedModel;
+    const current = state.models.find(m => canonicalModelKey(m.id) === canonicalModelKey(previous));
+    const eligible = state.models.filter(modelSelectable);
+    if (current && modelSelectable(current)) {
+      state.selectedModel = current.id;
+    } else if (current || !data.models_stale) {
+      const preferred = eligible.find(m => m.id === data.recommended_model) || eligible[0];
+      state.selectedModel = preferred ? preferred.id : '';
+    }
+    renderModelSelectOptions();
+    renderModelsOverview();
+    renderHelpModels();
+    updateFallbackButton();
+    renderProviderNotice(data);
+    renderUsage(data.usage);
+    const scheduleMatches = data.schedule && canonicalModelKey(data.schedule.model_id) === canonicalModelKey(state.selectedModel);
+    if (scheduleMatches) updateScheduleData(data.schedule);
+    else computeLocalSchedule();
+    if (state.selectedModel && previous !== state.selectedModel) {
+      await saveConfigToServer({ selected_model: state.selectedModel });
+      el.badgeTitle.textContent = 'MODEL UPDATED';
+      el.statusMessage.textContent = `${previous || 'The saved model'} is unavailable. Selected ${state.selectedModel} from the current catalog.`;
+    }
+    if (!scheduleMatches) await refreshSchedule();
+  }
+
+  async function refreshSchedule() {
+    try {
+      const params = new URLSearchParams({ model: state.selectedModel || '', offset: String(state.userOffsetMinutes) });
+      const res = await fetch(`/api/schedule?${params}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      updateScheduleData(await res.json());
+    } catch (error) {
+      computeLocalSchedule();
+    }
+  }
+
+  function renderProviderNotice(data) {
+    const notices = data.announcements || [];
+    const latest = notices[0];
+    const noticeText = latest ? latest.content : 'No current announcements from AgentRouter.';
+    if (el.officialNoticeText) el.officialNoticeText.textContent = noticeText;
+    if (el.helpOfficialNoticeText) el.helpOfficialNoticeText.textContent = noticeText;
+    if (el.officialNoticeDate) el.officialNoticeDate.textContent = latest?.published_at ? `Published ${new Date(latest.published_at).toLocaleString()}` : 'No publication date supplied';
+    if (el.noticeHistory) {
+      el.noticeHistory.replaceChildren();
+      notices.slice(1, 6).forEach(notice => {
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = `Earlier announcement · ${notice.published_at ? new Date(notice.published_at).toLocaleDateString() : 'Undated'}`;
+        const body = document.createElement('pre');
+        body.className = 'official-notice-text';
+        body.textContent = notice.content;
+        details.append(summary, body);
+        el.noticeHistory.appendChild(details);
+      });
+    }
+    if (el.providerSyncStatus) {
+      const stale = data.models_stale || data.notices_stale || data.pricing_stale;
+      el.providerSyncStatus.classList.toggle('stale', stale);
+      const synced = Math.max(data.models_updated_at || 0, data.notices_updated_at || 0);
+      const prefix = data.refreshing ? 'Syncing models & notices…' : data.notice_source === 'bundled' ? 'Built-in notice · waiting for live sync' : stale ? 'Cached data · retrying automatically' : `Synced ${new Date(synced * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      el.providerSyncStatus.textContent = `${prefix} · automatic sync every 5m`;
+    }
+  }
+
+  function modelLabel(model) {
+    let label = model.status_type === 'active' ? `Available (${model.latency_ms || 0}ms)` : model.tag || 'Supply policy unknown';
+    const statuses = { unavailable: 'Temporarily unavailable', quota_exhausted: '402 Quota empty', unauthorized: '401 Error', no_channel: '503 No channel', offline: 'Offline' };
+    if (statuses[model.status_type]) label = statuses[model.status_type];
+    if (typeof model.multiplier === 'number') label += ` · ${model.multiplier}× base`;
+    if (model.recommended) label += ' · Recommended';
+    return label;
+  }
+
+  function renderUsage(usage) {
+    if (!usage || !el.modelUsageList) return;
+    const number = value => Number(value).toLocaleString(undefined, { maximumFractionDigits: 4 });
+    if (el.usedCredits) el.usedCredits.textContent = usage.used_credit == null ? 'Not reported' : number(usage.used_credit);
+    if (el.remainingKeyCredit) el.remainingKeyCredit.textContent = usage.unlimited_key_cap ? 'Uncapped key' : usage.remaining_key_credit == null ? 'Not reported' : number(usage.remaining_key_credit);
+    if (el.usageStatus) {
+      const updated = usage.updated_at ? ` · ${new Date(usage.updated_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '';
+      el.usageStatus.textContent = `${usage.stale ? 'Cached / incomplete usage' : 'Reported API-key usage'}${updated}. ${usage.message || ''}`;
+      el.usageStatus.classList.toggle('stale', usage.stale);
+    }
+    el.modelUsageList.replaceChildren();
+    state.models.forEach(model => {
+      const entry = Object.entries(usage.per_model || {}).find(([id]) => canonicalModelKey(id) === canonicalModelKey(model.id));
+      const metrics = entry ? entry[1] : null;
+      const row = document.createElement('div');
+      row.className = 'model-usage-row';
+      const name = document.createElement('strong');
+      name.textContent = model.name;
+      const details = document.createElement('p');
+      details.textContent = metrics ? `Recent logged tokens: ${number(metrics.total_tokens)} (${number(metrics.prompt_tokens)} input / ${number(metrics.completion_tokens)} output) · ${number(metrics.requests)} requests` : 'Tokens used: not reported by AgentRouter';
+      const remaining = document.createElement('p');
+      remaining.textContent = 'Remaining model tokens / pool credit: not reported';
+      row.append(name, details, remaining);
+      el.modelUsageList.appendChild(row);
+    });
   }
 
   function renderModelSelectOptions() {
     const sel = el.modelSelect;
-    const currentVal = sel.value || state.selectedModel;
-    sel.innerHTML = '';
-
-    const uninterrupted = state.models.filter(m => !m.quota_limited);
-    const quotaLimited = state.models.filter(m => m.quota_limited && !m.discovered);
-    const discovered = state.models.filter(m => m.discovered);
-
-    function createOpt(m) {
-      const opt = document.createElement('option');
-      opt.value = m.id;
-      let statusPrefix = '';
-      let statusSuffix = '';
-
-      if (m.status_type === 'active') {
-        statusPrefix = '🟢 ';
-        statusSuffix = m.latency_ms ? ` [Active · ${m.latency_ms}ms]` : ' [Active]';
-      } else if (m.status_type === 'quota_exhausted') {
-        statusPrefix = '🔴 ';
-        statusSuffix = ' [402 Quota Empty]';
-      } else if (m.status_type === 'unauthorized') {
-        statusPrefix = '🔴 ';
-        statusSuffix = ' [401 Error]';
-      } else if (m.status_type === 'no_channel') {
-        statusPrefix = '🔴 ';
-        statusSuffix = ' [503 No Channel]';
-      } else if (m.status_type === 'offline') {
-        statusPrefix = '⚪ ';
-        statusSuffix = ' [Offline]';
-      } else if (!m.quota_limited) {
-        statusPrefix = '⚡ ';
-        statusSuffix = ' [Always Active]';
-      } else {
-        statusPrefix = '⏱️ ';
-        statusSuffix = ' [Quota Pool]';
-      }
-
-      opt.textContent = `${statusPrefix}${m.name}${statusSuffix}`;
-      return opt;
+    sel.replaceChildren();
+    const groups = [
+      ['Unlimited · all day', m => modelSelectable(m) && m.quota_limited === false],
+      ['Limited supply', m => modelSelectable(m) && m.quota_limited === true],
+      ['Other models · policy unknown', m => modelSelectable(m) && m.quota_limited == null],
+      ['Temporarily unavailable', m => !modelSelectable(m)]
+    ];
+    groups.forEach(([label, predicate]) => {
+      const models = state.models.filter(predicate);
+      if (!models.length) return;
+      const group = document.createElement('optgroup');
+      group.label = label;
+      models.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.textContent = `${model.name} [${modelLabel(model)}]`;
+        option.disabled = !modelSelectable(model);
+        group.appendChild(option);
+      });
+      sel.appendChild(group);
+    });
+    if (state.selectedModel && !state.models.some(m => m.id === state.selectedModel) && state.provider?.models_stale) {
+      const saved = document.createElement('option');
+      saved.value = state.selectedModel;
+      saved.textContent = `${state.selectedModel} [Saved model · awaiting sync]`;
+      sel.appendChild(saved);
     }
-
-    if (uninterrupted.length > 0) {
-      const grp = document.createElement('optgroup');
-      grp.label = '⚡ Uninterrupted Models (Always Active - No Quota Lock)';
-      uninterrupted.forEach(m => grp.appendChild(createOpt(m)));
-      sel.appendChild(grp);
-    }
-
-    if (quotaLimited.length > 0) {
-      const grp = document.createElement('optgroup');
-      grp.label = '⏱️ Claude & GPT Quota Pool (10:00 & 19:00 Releases)';
-      quotaLimited.forEach(m => grp.appendChild(createOpt(m)));
-      sel.appendChild(grp);
-    }
-
-    if (discovered.length > 0) {
-      const grp = document.createElement('optgroup');
-      grp.label = '🔍 Discovered from AgentRouter';
-      discovered.forEach(m => grp.appendChild(createOpt(m)));
-      sel.appendChild(grp);
-    }
-
-    // Restore selected value if present, otherwise default
-    if ([...sel.options].some(o => o.value === currentVal)) {
-      sel.value = currentVal;
-    } else if (sel.options.length > 0) {
-      sel.value = sel.options[0].value;
-      state.selectedModel = sel.value;
-    }
+    sel.value = state.selectedModel || '';
   }
 
   function renderModelsOverview() {
     const list = el.modelsOverviewList;
-    list.innerHTML = '';
-
-    if (!state.models || state.models.length === 0) {
-      list.innerHTML = '<div class="overview-loading">No models catalog available</div>';
-      return;
-    }
-
+    list.replaceChildren();
     el.modelsCount.textContent = `${state.models.length} models`;
-
     let filtered = state.models;
-    if (state.activeModelFilter === 'active') {
-      filtered = state.models.filter(m => m.status_type === 'active');
-    } else if (state.activeModelFilter === 'uninterrupted') {
-      filtered = state.models.filter(m => !m.quota_limited);
-    } else if (state.activeModelFilter === 'quota') {
-      filtered = state.models.filter(m => m.quota_limited);
+    if (state.activeModelFilter === 'active') filtered = filtered.filter(m => m.status_type === 'active' && modelSelectable(m));
+    if (state.activeModelFilter === 'uninterrupted') filtered = filtered.filter(m => m.quota_limited === false && modelSelectable(m));
+    if (state.activeModelFilter === 'quota') filtered = filtered.filter(m => m.quota_limited === true && modelSelectable(m));
+    if (!filtered.length) {
+      const empty = document.createElement('div');
+      empty.className = 'overview-loading';
+      empty.textContent = 'No models match this filter';
+      list.appendChild(empty);
     }
-
-    if (filtered.length === 0) {
-      list.innerHTML = `<div class="overview-loading">No models matching '${state.activeModelFilter}'</div>`;
-      return;
-    }
-
-    filtered.forEach(m => {
+    filtered.forEach(model => {
       const row = document.createElement('div');
       row.className = 'model-row-item';
-      row.style.cursor = 'pointer';
-      row.title = `Click to test ${m.name} (${m.id})`;
-
-      const isAvailable = m.status_type === 'active';
-      const isExhaustedOrError = m.status_type === 'quota_exhausted' || m.status_type === 'unauthorized' || m.status_type === 'no_channel' || (m.status_code && m.status_code >= 400);
-
-      // Semantic status class: Available (Lime), Quota Pool Scheduled (Amber), Exhausted/Error (Red), Unchecked Uninterrupted (Active/Lime)
-      const typeClass = isAvailable ? 'badge-model-active'
-        : isExhaustedOrError ? 'badge-model-exhausted'
-        : m.quota_limited ? 'badge-model-scheduled'
-        : 'badge-model-active';
-
-      let statusLabel = m.quota_limited ? '⏱️ Scheduled' : '⚡ Uninterrupted';
-      if (m.status_type === 'active') {
-        statusLabel = `Available (${m.latency_ms || 0}ms)`;
-      } else if (m.status_type === 'quota_exhausted') {
-        statusLabel = '402 Quota Empty';
-      } else if (m.status_type === 'unauthorized') {
-        statusLabel = '401 Error';
-      } else if (m.status_type === 'no_channel') {
-        statusLabel = '503 No Channel';
-      } else if (m.status_type === 'offline') {
-        statusLabel = 'Offline';
-      }
-
-      row.innerHTML = `
-        <span class="model-row-name" title="${m.id}">${m.name}</span>
-        <span class="model-row-badge ${typeClass}">${statusLabel}</span>
-      `;
-
+      row.title = model.id;
+      row.setAttribute('aria-disabled', String(!modelSelectable(model)));
+      const name = document.createElement('span');
+      name.className = 'model-row-name';
+      name.textContent = model.name;
+      name.title = model.id;
+      const badge = document.createElement('span');
+      const error = !modelSelectable(model) || (model.status_code && model.status_code >= 400);
+      badge.className = `model-row-badge ${error ? 'badge-model-exhausted' : model.status_type === 'active' ? 'badge-model-active' : model.quota_limited === true ? 'badge-model-scheduled' : 'badge-model-unchecked'}`;
+      badge.textContent = modelLabel(model);
+      row.append(name, badge);
       row.addEventListener('click', () => {
-        el.modelSelect.value = m.id;
+        if (!modelSelectable(model)) return;
+        el.modelSelect.value = model.id;
         onModelSelected();
       });
-
       list.appendChild(row);
     });
+  }
+
+  function renderHelpModels() {
+    if (!el.helpModelsList) return;
+    el.helpModelsList.replaceChildren();
+    state.models.forEach(model => {
+      const card = document.createElement('div');
+      card.className = 'help-model-type-card';
+      const name = document.createElement('strong');
+      name.textContent = model.name;
+      const policy = document.createElement('p');
+      policy.textContent = modelLabel(model);
+      card.append(name, policy);
+      el.helpModelsList.appendChild(card);
+    });
+  }
+
+  function updateFallbackButton() {
+    if (!el.btnSwitchRecommended) return;
+    const eligible = state.models.filter(m => modelSelectable(m) && m.id !== state.selectedModel);
+    const target = eligible.find(m => m.id === state.provider?.recommended_model) || eligible.find(m => m.quota_limited === false) || eligible[0];
+    el.btnSwitchRecommended.dataset.modelId = target ? target.id : '';
+    el.btnSwitchRecommended.textContent = target ? `Switch to ${target.name}` : 'No alternate model available';
+    el.btnSwitchRecommended.disabled = !target;
+  }
+
+  function startProviderRefresh() {
+    if (providerRefreshTimer) clearInterval(providerRefreshTimer);
+    providerRefreshTimer = setInterval(refreshProviderData, 15000);
+    window.addEventListener('focus', refreshProviderData);
   }
 
   function updateModelInOverview(modelId, statusType, latency) {
@@ -955,6 +1109,7 @@
     const modelId = el.modelSelect.value;
     state.selectedModel = modelId;
     saveConfigToServer({ selected_model: modelId });
+    await refreshSchedule();
     await testConnection(true);
   }
 
@@ -988,33 +1143,29 @@
   }
 
   async function discoverModels() {
-    if (!el.btnDiscoverModels || state.isTesting) return;
-    el.btnDiscoverModels.textContent = '...';
+    if (state.isDiscovering) return;
+    state.isDiscovering = true;
+    el.btnDiscoverModels.textContent = 'Syncing…';
     el.btnDiscoverModels.disabled = true;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
     try {
       const res = await fetch('/api/models/discover', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
         body: JSON.stringify({ base_url: state.baseUrl })
       });
-      clearTimeout(timeoutId);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      if (data.models && data.models.length > 0) {
-        state.models = data.models;
-        renderModelSelectOptions();
-        renderModelsOverview();
+      if (data.provider) await applyProviderData({ ...data.provider, models: data.models });
+    } catch (error) {
+      if (el.providerSyncStatus) {
+        el.providerSyncStatus.textContent = 'Sync failed · keeping cached data and retrying automatically';
+        el.providerSyncStatus.classList.add('stale');
       }
-      if (data.count > 0) {
-        el.statusMessage.textContent = `Discovered ${data.count} models from AgentRouter.`;
-      }
-    } catch (e) {
-      clearTimeout(timeoutId);
-      console.warn('Discovery error:', e);
     } finally {
-      el.btnDiscoverModels.textContent = 'Discover';
+      clearTimeout(timeoutId);
+      state.isDiscovering = false;
+      el.btnDiscoverModels.textContent = 'Sync Now';
       el.btnDiscoverModels.disabled = false;
     }
   }
@@ -1273,6 +1424,22 @@
       el.settingApiKey.value = '';
       el.settingApiKey.placeholder = state.hasApiKey ? (state.maskedApiKey || 'Key configured') : 'Enter API Key (sk-...)';
     }
+
+    // Load scheduler status
+    fetch('/api/scheduler/status')
+      .then(r => r.json())
+      .then(data => {
+        if (el.settingSchedulerEnabled && data.enabled !== undefined) {
+          el.settingSchedulerEnabled.checked = data.enabled;
+        }
+        if (el.settingPressEnter && data.press_enter !== undefined) {
+          el.settingPressEnter.checked = data.press_enter;
+        }
+        if (el.settingGeminiKey && data.has_gemini_key) {
+          el.settingGeminiKey.placeholder = 'Gemini 3.8 key configured (encrypted)';
+        }
+      })
+      .catch(console.warn);
   }
 
   function closeSettingsModal() {
@@ -1286,10 +1453,7 @@
     } else {
       state.userOffsetMinutes = parseInt(val, 10);
     }
-    fetch(`/api/schedule?offset=${state.userOffsetMinutes}`)
-      .then(r => r.json())
-      .then(updateScheduleData)
-      .catch(console.error);
+    saveConfigToServer({ user_timezone_offset: state.userOffsetMinutes }).then(refreshSchedule);
   }
 
   async function saveConfigToServer(updates) {

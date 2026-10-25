@@ -27,6 +27,10 @@ if sys.platform == "win32":
 import config_manager
 import time_service
 import router_client
+import provider_updates
+import usage_service
+import focus_trigger
+import scheduler as release_scheduler
 
 
 def get_bundle_dir() -> str:
@@ -99,21 +103,45 @@ class AgentRouterRequestHandler(BaseHTTPRequestHandler):
         # API Routes
         if path == "/api/status":
             gateway = router_client.check_gateway_health()
-            schedule = time_service.format_release_info()
             cfg = config_manager.get_safe_config()
+            schedule = time_service.format_release_info(model_id=cfg.get("selected_model"), user_offset_minutes=cfg.get("user_timezone_offset"))
             self._send_json({
                 "gateway": gateway,
                 "schedule": schedule,
                 "config": cfg,
+                "provider": provider_updates.get_snapshot(),
                 "server_time": time.time()
             })
             return
 
         elif path == "/api/schedule":
             offset_param = query.get("offset")
-            offset_minutes = int(offset_param[0]) if offset_param else None
-            schedule = time_service.format_release_info(user_offset_minutes=offset_minutes)
+            model_id = query.get("model", [None])[0]
+            try:
+                offset_minutes = int(offset_param[0]) if offset_param else None
+                schedule = time_service.format_release_info(user_offset_minutes=offset_minutes, model_id=model_id)
+            except ValueError:
+                self._send_json({"error": "Invalid timezone offset"}, status=400)
+                return
             self._send_json(schedule)
+            return
+
+        elif path == "/api/provider":
+            snapshot = provider_updates.get_snapshot()
+            snapshot["models"] = router_client.get_all_models_with_status()
+            snapshot["usage"] = usage_service.get_snapshot()
+            model_id = query.get("model", [None])[0]
+            try:
+                offset_minutes = int(query["offset"][0]) if "offset" in query else None
+                snapshot["schedule"] = time_service.format_release_info(model_id=model_id, user_offset_minutes=offset_minutes)
+            except ValueError:
+                self._send_json({"error": "Invalid timezone offset"}, status=400)
+                return
+            self._send_json(snapshot)
+            return
+
+        elif path == "/api/usage":
+            self._send_json(usage_service.get_snapshot())
             return
 
         elif path == "/api/models":
@@ -130,6 +158,26 @@ class AgentRouterRequestHandler(BaseHTTPRequestHandler):
             self._send_json({
                 "has_api_key": bool(raw_key),
                 "masked_api_key": config_manager.mask_key(raw_key)
+            })
+            return
+
+        elif path == "/api/focus/scan":
+            windows = focus_trigger.find_target_windows()
+            self._send_json({
+                "found": [{"hwnd": w["hwnd"], "title": w["title"], "app": w["app"]} for w in windows],
+                "count": len(windows)
+            })
+            return
+
+        elif path == "/api/scheduler/status":
+            cfg = config_manager.load_config()
+            self._send_json({
+                "running": release_scheduler.is_running(),
+                "enabled": cfg.get("scheduler_enabled", True),
+                "press_enter": cfg.get("scheduler_press_enter", True),
+                "gemini_enabled": cfg.get("gemini_enabled", False),
+                "has_gemini_key": bool(cfg.get("gemini_api_key")),
+                "jobs": release_scheduler.get_jobs_info(),
             })
             return
 
@@ -188,11 +236,23 @@ class AgentRouterRequestHandler(BaseHTTPRequestHandler):
             api_key = body.get("api_key")
             base_url = body.get("base_url")
             result = router_client.discover_models(api_key=api_key, base_url=base_url)
+            usage_service.request_refresh()
+            if "provider" in result:
+                result["provider"]["usage"] = usage_service.get_snapshot()
             self._send_json(result)
+            return
+
+        elif path == "/api/provider/refresh":
+            provider_updates.request_refresh()
+            usage_service.request_refresh()
+            self._send_json({"refresh_requested": True})
             return
 
         elif path == "/api/config":
             saved = config_manager.save_config(body)
+            if "base_url" in body or "api_key" in body:
+                provider_updates.request_refresh()
+                usage_service.request_refresh()
             self._send_json(config_manager.get_safe_config())
             return
 
@@ -203,6 +263,8 @@ class AgentRouterRequestHandler(BaseHTTPRequestHandler):
                 config_manager.clear_api_key()
             else:
                 config_manager.set_api_key(key)
+            provider_updates.request_refresh()
+            usage_service.request_refresh()
             raw_key = config_manager.get_api_key()
             self._send_json({
                 "has_api_key": bool(raw_key),
@@ -210,16 +272,57 @@ class AgentRouterRequestHandler(BaseHTTPRequestHandler):
             })
             return
 
+        elif path == "/api/focus/trigger":
+            press = body.get("press_enter", True)
+            cfg = config_manager.load_config()
+            gemini_key = cfg.get("gemini_api_key", "").strip()
+            gemini_on = cfg.get("gemini_enabled", False) and bool(gemini_key)
+
+            ai_gate = None
+            if gemini_on:
+                try:
+                    from gemini_helper import ai_verify_window_from_screenshot
+                    ai_gate = lambda hwnd, title: ai_verify_window_from_screenshot(hwnd, title, gemini_key)
+                except Exception:
+                    pass
+
+            results = focus_trigger.trigger_all_targets(press_enter=press, ai_gate_fn=ai_gate)
+
+            if gemini_on:
+                try:
+                    from gemini_helper import ai_narrate_trigger
+                    results["ai_message"] = ai_narrate_trigger(results, gemini_key)
+                except Exception:
+                    pass
+
+            self._send_json(results)
+            return
+
+        elif path == "/api/scheduler/toggle":
+            enabled = bool(body.get("enabled", True))
+            config_manager.save_config({"scheduler_enabled": enabled})
+            self._send_json({"scheduler_enabled": enabled})
+            return
+
         else:
             self.send_error(404, "Endpoint Not Found")
+
+
+class ProviderHTTPServer(ThreadingHTTPServer):
+    def server_close(self):
+        provider_updates.stop()
+        usage_service.stop()
+        super().server_close()
 
 
 def run_server(port: int = 8765, host: str = "127.0.0.1") -> ThreadingHTTPServer:
     """Starts the ThreadingHTTPServer on specified host/port with daemon threads."""
     ThreadingHTTPServer.allow_reuse_address = True
-    server = ThreadingHTTPServer((host, port), AgentRouterRequestHandler)
+    server = ProviderHTTPServer((host, port), AgentRouterRequestHandler)
     server.daemon_threads = True
     server.block_on_close = False
+    provider_updates.start()
+    usage_service.start()
     print(f"[Server] Running AgentRouter monitor on http://{host}:{port}")
     return server
 

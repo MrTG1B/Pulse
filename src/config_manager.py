@@ -161,12 +161,17 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "api_key": "",
     "api_key_encrypted": "",
     "base_url": "https://agentrouter.org",
-    "selected_model": "deepseek-v4-flash",
+    "selected_model": "gpt-6.1-sol",
     "refresh_interval_sec": 30,
     "auto_refresh_enabled": True,
     "always_on_top": True,
     "compact_mode": False,
     "sound_alert_enabled": True,
+    "scheduler_enabled": True,
+    "scheduler_press_enter": True,
+    "gemini_api_key": "",
+    "gemini_api_key_encrypted": "",
+    "gemini_enabled": False,
     "user_timezone_offset": 330,  # UTC+05:30 (IST) in minutes
 }
 
@@ -184,17 +189,28 @@ def mask_key(key: str) -> str:
 
 
 def _save_to_disk(cfg: Dict[str, Any]) -> None:
-    """Internal helper to atomically write config to disk with API key DPAPI-encrypted."""
+    """Internal helper to atomically write config to disk with API keys DPAPI-encrypted."""
     disk_cfg = dict(cfg)
     plain_key = (disk_cfg.get("api_key") or "").strip()
+    plain_gemini_key = (disk_cfg.get("gemini_api_key") or "").strip()
 
     if plain_key:
         disk_cfg["api_key_encrypted"] = encrypt_secret(plain_key)
-    else:
+    elif "api_key" in cfg and not plain_key:
         disk_cfg["api_key_encrypted"] = ""
+    else:
+        disk_cfg["api_key_encrypted"] = disk_cfg.get("api_key_encrypted", "")
 
-    # NEVER store plaintext API key in the JSON file on disk
+    if plain_gemini_key:
+        disk_cfg["gemini_api_key_encrypted"] = encrypt_secret(plain_gemini_key)
+    elif "gemini_api_key" in cfg and not plain_gemini_key:
+        disk_cfg["gemini_api_key_encrypted"] = ""
+    else:
+        disk_cfg["gemini_api_key_encrypted"] = disk_cfg.get("gemini_api_key_encrypted", "")
+
+    # NEVER store plaintext API keys in the JSON file on disk
     disk_cfg["api_key"] = ""
+    disk_cfg["gemini_api_key"] = ""
 
     parent_dir = os.path.dirname(CONFIG_FILE)
     if parent_dir and not os.path.exists(parent_dir):
@@ -245,18 +261,30 @@ def load_config() -> Dict[str, Any]:
                     if isinstance(saved, dict):
                         cfg.update(saved)
 
-                        # 1. If encrypted key is present, decrypt it into memory
+                        # 1. AgentRouter API Key
                         enc_key = saved.get("api_key_encrypted", "").strip()
                         if enc_key:
                             decrypted = decrypt_secret(enc_key)
                             cfg["api_key"] = decrypted
                             cfg["api_key_encrypted"] = enc_key
 
-                        # 2. Check for legacy unencrypted plaintext key in config.json
                         legacy_plain = saved.get("api_key", "").strip()
                         if legacy_plain and not enc_key:
                             cfg["api_key"] = legacy_plain
                             cfg["api_key_encrypted"] = encrypt_secret(legacy_plain)
+                            needs_migration = True
+
+                        # 2. Gemini API Key
+                        enc_gemini = saved.get("gemini_api_key_encrypted", "").strip()
+                        if enc_gemini:
+                            decrypted_gemini = decrypt_secret(enc_gemini)
+                            cfg["gemini_api_key"] = decrypted_gemini
+                            cfg["gemini_api_key_encrypted"] = enc_gemini
+
+                        legacy_gemini = saved.get("gemini_api_key", "").strip()
+                        if legacy_gemini and not enc_gemini:
+                            cfg["gemini_api_key"] = legacy_gemini
+                            cfg["gemini_api_key_encrypted"] = encrypt_secret(legacy_gemini)
                             needs_migration = True
             except Exception:
                 pass
@@ -282,17 +310,23 @@ def save_config(updates: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def get_safe_config() -> Dict[str, Any]:
-    """Returns configuration object suitable for frontend, with masked API key."""
+    """Returns configuration object suitable for frontend, with masked API keys."""
     cfg = load_config()
     key = cfg.get("api_key", "").strip()
+    gemini_key = cfg.get("gemini_api_key", "").strip()
     safe_cfg = dict(cfg)
     safe_cfg["has_api_key"] = bool(key)
     safe_cfg["masked_api_key"] = mask_key(key)
-    # Don't send plain key in general config fetch
     safe_cfg["api_key"] = mask_key(key)
     safe_cfg["is_encrypted"] = True
     if "api_key_encrypted" in safe_cfg:
         safe_cfg["api_key_encrypted"] = bool(key)
+
+    safe_cfg["has_gemini_key"] = bool(gemini_key)
+    safe_cfg["masked_gemini_key"] = mask_key(gemini_key)
+    safe_cfg["gemini_api_key"] = mask_key(gemini_key)
+    if "gemini_api_key_encrypted" in safe_cfg:
+        safe_cfg["gemini_api_key_encrypted"] = bool(gemini_key)
     return safe_cfg
 
 

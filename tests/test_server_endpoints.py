@@ -11,6 +11,7 @@ import json
 import tempfile
 import os
 import sys
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 import server
@@ -27,6 +28,13 @@ class TestServerEndpoints(unittest.TestCase):
         cls.original_config_file = config_manager.CONFIG_FILE
         config_manager.CONFIG_FILE = cls.test_cfg_path
 
+        cls.sync_patch = patch("provider_updates.start")
+        cls.usage_patch = patch("usage_service.start")
+        cls.gateway_patch = patch("router_client.check_gateway_health", return_value={"reachable": True, "status_code": 200})
+        cls.sync_patch.start()
+        cls.usage_patch.start()
+        cls.gateway_patch.start()
+
         cls.port = app.find_free_port(9870)
         cls.httpd = server.run_server(port=cls.port)
         cls.server_thread = threading.Thread(target=cls.httpd.serve_forever, daemon=True)
@@ -40,12 +48,15 @@ class TestServerEndpoints(unittest.TestCase):
         cls.tmp_dir.cleanup()
         cls.httpd.shutdown()
         cls.httpd.server_close()
+        cls.sync_patch.stop()
+        cls.usage_patch.stop()
+        cls.gateway_patch.stop()
 
     def test_serve_index_html(self):
         resp = requests.get(f"{self.base_url}/")
         self.assertEqual(resp.status_code, 200)
         self.assertIn("AgentRouter", resp.text)
-        self.assertIn("NEXT QUOTA RELEASE", resp.text)
+        self.assertIn("MODEL SUPPLY", resp.text)
 
     def test_serve_style_css(self):
         resp = requests.get(f"{self.base_url}/style.css")
@@ -95,7 +106,8 @@ class TestServerEndpoints(unittest.TestCase):
         resp = requests.get(f"{self.base_url}/api/schedule?offset=330")
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertIn("07:30 AM & 04:30 PM", data["daily_schedule_local"])
+        self.assertFalse(data["enabled"])
+        self.assertIsNone(data["next_slot_utc"])
         self.assertIn("countdown_formatted", data)
         self.assertIn("seconds_remaining", data)
 
@@ -104,7 +116,7 @@ class TestServerEndpoints(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertIn("models", data)
-        self.assertGreaterEqual(len(data["models"]), 4)
+        self.assertGreaterEqual(len(data["models"]), 3)
 
     def test_api_config_key_save_and_clear(self):
         # Save key
@@ -145,9 +157,10 @@ class TestServerEndpoints(unittest.TestCase):
         requests.post(f"{self.base_url}/api/config/key", json={"action": "clear"})
 
     def test_api_models_discover_endpoint(self):
-        resp = requests.post(f"{self.base_url}/api/models/discover", json={
-            "api_key": "sk-test-fake"
-        })
+        with patch("router_client.discover_models", return_value={"success": True, "models": []}):
+            resp = requests.post(f"{self.base_url}/api/models/discover", json={
+                "api_key": "sk-test-fake"
+            })
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertIn("success", data)
@@ -164,6 +177,38 @@ class TestServerEndpoints(unittest.TestCase):
         self.assertFalse(data["always_on_top"])
         self.assertFalse(data["sound_alert_enabled"])
         self.assertEqual(data["selected_model"], "deepseek-v4-flash")
+
+    def test_provider_endpoint_reads_cache_without_upstream_call(self):
+        with patch("provider_updates._fetch_json") as upstream:
+            resp = requests.get(f"{self.base_url}/api/provider?model=gpt-6-astra&offset=330")
+            upstream.assert_not_called()
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn("announcements", data)
+        self.assertIn("models", data)
+        self.assertFalse(data["schedule"]["enabled"])
+        self.assertNotIn("api_key", data)
+        self.assertNotIn("api_key_encrypted", data)
+
+    def test_suspended_model_check_does_not_send_probe(self):
+        with patch("router_client.requests.post") as upstream:
+            # requests is shared with the handler, so use an unpatched Session for local HTTP.
+            resp = requests.Session().post(f"{self.base_url}/api/check", json={"model_id": "claude-opus-5.5"})
+            upstream.assert_not_called()
+        self.assertEqual(resp.json()["status_type"], "unavailable")
+
+    def test_provider_refresh_wakes_background_worker(self):
+        with patch("provider_updates.request_refresh") as wake:
+            resp = requests.post(f"{self.base_url}/api/provider/refresh", json={})
+            wake.assert_called_once()
+        self.assertTrue(resp.json()["refresh_requested"])
+
+    def test_model_schedule_and_invalid_offset(self):
+        with patch("provider_updates.get_model", return_value={"id": "new-model", "provider_status": "limited", "release_minutes_utc": [105]}):
+            resp = requests.get(f"{self.base_url}/api/schedule?model=new-model&offset=330")
+        self.assertTrue(resp.json()["enabled"])
+        self.assertIn("07:15 AM", resp.json()["daily_schedule_local"])
+        self.assertEqual(requests.get(f"{self.base_url}/api/provider?offset=bad").status_code, 400)
 
 
 if __name__ == "__main__":

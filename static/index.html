@@ -116,21 +116,22 @@
 
         <!-- Quick 1-Click Action Button (Appears directly inside card when quota exhausted or no channel) -->
         <div class="status-action-row" id="statusActionRow" style="display: none;">
-          <button class="btn-quick-switch" id="btnSwitchDeepSeek">
-            ⚡ Switch to DeepSeek V4 Flash (Active)
+          <button class="btn-quick-switch" id="btnSwitchRecommended">
+            Switch to the recommended model
           </button>
         </div>
       </section>
 
       <!-- Countdown & Local Time Schedule Card -->
-      <section class="countdown-card" id="countdownCard">
+      <section class="countdown-card no-schedule" id="countdownCard">
         <div class="countdown-header">
           <div class="countdown-title">
             <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span>NEXT QUOTA RELEASE</span>
+            <span id="scheduleTitle">MODEL SUPPLY</span>
           </div>
-          <span class="batch-pill" id="batchPill">Batch 1</span>
+          <span class="batch-pill" id="batchPill">All day</span>
         </div>
+        <p class="supply-message" id="supplyMessage">Fetching the current model supply policy...</p>
 
         <!-- Big Countdown Clock -->
         <div class="countdown-timer">
@@ -162,16 +163,16 @@
             <span class="value" id="localTimeDisplay">Calculating...</span>
           </div>
           <div class="ref-time-sub">
-            <span id="beijingRefTime">Beijing: 10:00 & 19:00 (Beijing Time / UTC+8)</span>
+            <span id="beijingRefTime"></span>
             <span class="dot-divider">•</span>
-            <span id="utcRefTime">02:00 & 11:00 UTC</span>
+            <span id="utcRefTime"></span>
           </div>
         </div>
 
         <!-- Daily Release Schedule Information -->
         <div class="schedule-info-row">
           <span class="schedule-tag">📅 Daily Drops:</span>
-          <span class="schedule-times" id="dailyScheduleTimes">07:30 AM & 04:30 PM (IST)</span>
+          <span class="schedule-times" id="dailyScheduleTimes">No scheduled refill</span>
         </div>
       </section>
 
@@ -179,20 +180,17 @@
       <section class="model-control-card">
         <div class="section-label-row">
           <label for="modelSelect">Target Model to Test:</label>
-          <span class="models-count" id="modelsCount">4 models</span>
+          <span class="models-count" id="modelsCount">3 models</span>
         </div>
 
         <div class="select-wrapper">
           <select id="modelSelect" class="model-dropdown">
-            <optgroup label="⚡ Uninterrupted (Always Active)">
-              <option value="deepseek-v4-flash" selected>⚡ DeepSeek V4 Flash</option>
+            <optgroup label="⚡ Uninterrupted / Unlimited (All Day)">
+              <option value="gpt-6.1-sol" selected>GPT-6.1 Sol (Recommended · Unlimited)</option>
+              <option value="gpt-6-astra">GPT-6 Astra (Unlimited)</option>
             </optgroup>
-            <optgroup label="Claude Family (Quota Pool: 10:00 & 19:00)">
-              <option value="claude-opus-4-8">Claude Opus 4.8</option>
-              <option value="claude-opus-5">Claude Opus 5</option>
-            </optgroup>
-            <optgroup label="OpenAI Family (Quota Pool: 10:00 & 19:00)">
-              <option value="gpt-6-astra">GPT-6 Astra</option>
+            <optgroup label="Temporarily unavailable">
+              <option value="claude-opus-5-5" disabled>Claude Opus 5.5 (Temporarily unavailable)</option>
             </optgroup>
           </select>
         </div>
@@ -206,8 +204,8 @@
           <button class="btn-action secondary-action" id="btnTestAllModels" title="Batch test Claude, GPT, and DeepSeek">
             Test All
           </button>
-          <button class="btn-action secondary-action" id="btnDiscoverModels" title="Discover live models from AgentRouter API">
-            Discover
+          <button class="btn-action secondary-action" id="btnDiscoverModels" title="Refresh models and notices from AgentRouter now">
+            Sync Now
           </button>
         </div>
       </section>
@@ -243,6 +241,21 @@
         </div>
       </section>
 
+      <p class="provider-sync-status" id="providerSyncStatus" role="status">Models &amp; notices sync automatically every 5 minutes.</p>
+
+      <details class="usage-details">
+        <summary class="notice-summary"><span>API-Key Credits &amp; Model Usage</span><span class="summary-caret">▼</span></summary>
+        <div class="notice-content">
+          <div class="usage-grid">
+            <div><span>Credits used</span><strong id="usedCredits">—</strong></div>
+            <div><span>API-key credit left</span><strong id="remainingKeyCredit">—</strong></div>
+          </div>
+          <p class="provider-sync-status" id="usageStatus">Loading reported usage...</p>
+          <p class="usage-explanation">A key cap is separate from your account balance and shared model pools. Pool balances and remaining tokens are shown only when AgentRouter reports them.</p>
+          <div id="modelUsageList"></div>
+        </div>
+      </details>
+
       <!-- Live Models Health Table / Drawer (Collapsible) -->
       <details class="models-overview-details" id="modelsOverview">
         <summary class="overview-summary">
@@ -266,16 +279,15 @@
       <!-- Announcement / Official Site Notice Accordion -->
       <details class="notice-details">
         <summary class="notice-summary">
-          <span>Official AgentRouter Quota Policy</span>
+          <span>Latest AgentRouter Notice</span>
           <span class="summary-caret">▼</span>
         </summary>
         <div class="notice-content">
-          <p class="notice-quote">
-            "为保障服务稳定，8月27日起 Claude / GPT 改为每日限量供应，新的投放时间为🕙北京时间10:00和19:00（对应UTC时间02:00和11:00），请大家注意时间变更，避免跑空。🕙 额度用尽后会报错 402 Budget pool quota has been exhausted，等下一批次即可；也可随时切换 DeepSeek / GLM 正常使用。"
-          </p>
-          <p class="notice-en">
-            "Claude / GPT are limited to daily quotas released at 10:00 AM & 7:00 PM Beijing Time (02:00 & 11:00 UTC = 07:30 AM & 04:30 PM IST). 402 Budget pool exhausted indicates waiting for next batch; DeepSeek / GLM remain uninterrupted."
-          </p>
+          <p class="notice-date" id="officialNoticeDate">Fetching the latest dated announcement...</p>
+          <pre class="official-notice-text" id="officialNoticeText">claude-opus-5.5 is temporarily unavailable. Restoration time has not been announced.
+gpt-6-astra is now unlimited and available all day.
+gpt-6.1sol is unlimited at a low multiplier. AgentRouter recommends using it first.</pre>
+          <div id="noticeHistory"></div>
         </div>
       </details>
 
@@ -328,6 +340,51 @@
               <input type="checkbox" id="settingChime" checked>
               Play Sound Chime on Quota Release (00:00:00)
             </label>
+          </div>
+
+          <!-- 🎯 Auto-Focus Scheduler Section -->
+          <div class="form-group" style="border-top: 1px solid rgba(255,255,255,0.08); margin-top: 14px; padding-top: 14px;">
+            <label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:8px;">
+              🎯 Auto-Focus Scheduler
+            </label>
+
+            <div class="checkbox-row">
+              <label class="checkbox-label">
+                <input type="checkbox" id="settingSchedulerEnabled" checked>
+                Focus Codex &amp; Claude Code at Quota Release
+              </label>
+            </div>
+            <small class="form-hint" style="display:block;margin-top:4px;">
+              Runs only when the selected model has a current, published quota release. Unlimited and unavailable models have no release trigger.
+            </small>
+
+            <div class="checkbox-row" style="margin-top:8px;">
+              <label class="checkbox-label">
+                <input type="checkbox" id="settingPressEnter" checked>
+                Auto-press Enter after focusing
+              </label>
+            </div>
+
+            <!-- Gemini 3.8 Optional Key -->
+            <label for="settingGeminiKey" style="margin-top:12px;display:block;font-size:11px;color:var(--text-muted);">
+              Gemini 3.8 API Key <span style="opacity:0.6;">(Optional AI smart-gate &amp; narration)</span>
+            </label>
+            <div class="input-with-action" style="margin-top:4px;">
+              <input type="password" id="settingGeminiKey" placeholder="Paste Google AI Studio Key (AIzaSy...)">
+              <button class="btn-inline" id="btnSaveGeminiKey" type="button">Save</button>
+            </div>
+            <small class="form-hint">🔒 Encrypted via Windows DPAPI. When enabled, window or screen screenshots may be sent to Google for verification.</small>
+
+            <!-- Test / Diagnostic Buttons -->
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+              <button class="btn-action secondary-action" id="btnScanWindows" type="button" style="font-size:11px;padding:6px 10px;">
+                🔍 Scan Apps
+              </button>
+              <button class="btn-action secondary-action" id="btnManualTrigger" type="button" style="font-size:11px;padding:6px 10px;">
+                ⚡ Trigger Now
+              </button>
+            </div>
+            <div id="focusTriggerResult" style="margin-top:8px;font-size:11px;color:var(--text-muted);min-height:16px;word-break:break-word;"></div>
           </div>
         </div>
         <div class="modal-footer">
@@ -384,46 +441,17 @@
 
           <!-- Tab 2: Quota Drops -->
           <div class="help-tab-content" id="tabQuotas" style="display: none;">
-            <h4 class="help-section-title">⏱️ Daily Quota Release Schedule</h4>
-            <p class="help-text">
-              AgentRouter allocates Claude & GPT pool quotas twice daily at exact fixed intervals:
-            </p>
-            <div class="help-schedule-grid">
-              <div class="schedule-grid-card">
-                <span class="grid-card-badge">Batch 1 (Morning)</span>
-                <span class="grid-card-time">10:00 CST (Beijing)</span>
-                <span class="grid-card-utc">02:00 UTC</span>
-                <span class="grid-card-local">07:30 AM IST (India)</span>
-              </div>
-              <div class="schedule-grid-card">
-                <span class="grid-card-badge">Batch 2 (Evening)</span>
-                <span class="grid-card-time">19:00 CST (Beijing)</span>
-                <span class="grid-card-utc">11:00 UTC</span>
-                <span class="grid-card-local">04:30 PM IST (India)</span>
-              </div>
-            </div>
-            <p class="help-hint">
-              💡 The countdown timer on your screen shows the exact time remaining until the next release. If audio notifications (🔔) are enabled, a discreet chime rings at 00:00:00.
-            </p>
+            <h4 class="help-section-title">Current Supply &amp; Quota Policy</h4>
+            <p class="help-hint" id="helpScheduleSummary">Quota countdowns use only the selected model's published release times.</p>
+            <pre class="official-notice-text" id="helpOfficialNoticeText">Fetching the latest announcement...</pre>
+            <p class="help-hint">Pulse refreshes models and notices automatically every 5 minutes. Dated announcements take priority over older notices. Use Sync Now to check immediately.</p>
           </div>
 
           <!-- Tab 3: Models & Pools -->
           <div class="help-tab-content" id="tabModels" style="display: none;">
-            <h4 class="help-section-title">⚡ Quota Pool vs. Uninterrupted Models</h4>
-            <div class="help-model-type-card">
-              <div class="type-header">
-                <span class="status-indicator-dot" style="background-color: var(--status-scheduled)"></span>
-                <strong>Quota Pool Models (Claude & OpenAI)</strong>
-              </div>
-              <p>Claude 3.5 Sonnet, Claude 3.7 Thinking, Claude Opus 5, GPT-4o, and GPT-6 Astra draw from the shared daily allocation. When depleted, you will see <em>HTTP 402 Budget Pool Quota Exhausted</em>.</p>
-            </div>
-            <div class="help-model-type-card">
-              <div class="type-header">
-                <span class="status-indicator-dot" style="background-color: var(--status-available)"></span>
-                <strong>⚡ Uninterrupted Models (Zero Pool Lock)</strong>
-              </div>
-              <p><strong>DeepSeek V4 Flash</strong>, <strong>DeepSeek Chat (V3)</strong>, <strong>DeepSeek Reasoner (R1)</strong>, and <strong>GLM-4 Plus</strong> are NOT bound to daily quota limits! You can switch to them anytime for uninterrupted work.</p>
-            </div>
+            <h4 class="help-section-title">Live Models &amp; Supply</h4>
+            <div id="helpModelsList"></div>
+            <p class="help-hint">Unlimited describes provider supply. A successful connection test confirms your token's access. Unknown policies are shown without an invented quota schedule.</p>
           </div>
 
           <!-- Tab 4: Troubleshooting -->
@@ -436,7 +464,7 @@
               </li>
               <li>
                 <span class="badge-mini status-exhausted">402</span>
-                <strong>Budget Pool Exhausted:</strong> Daily quota ran out. Wait for next drop or switch to DeepSeek V4 Flash.
+                <strong>Budget Pool Exhausted:</strong> The provider budget pool is exhausted. Check the latest notice or switch to another available model.
               </li>
               <li>
                 <span class="badge-mini status-scheduled">503</span>

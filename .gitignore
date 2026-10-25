@@ -7,6 +7,9 @@ config.json.tmp*
 
 # Local configuration with private user API keys
 config.json
+provider_cache.json
+provider_cache.json.tmp
+/Pulse.exe
 
 # PyInstaller build artifacts & distribution
 build/

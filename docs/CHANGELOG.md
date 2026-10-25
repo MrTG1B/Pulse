@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-10-25
+
+### Added
+- Automatic background synchronization of account models, pricing multipliers, and dated AgentRouter announcements every five minutes, plus **Sync Now**.
+- Cached provider data with visible stale status, account isolation, and automatic model additions/removals.
+- API-key credit usage and key caps from AgentRouter billing endpoints, plus recent input/output token counts when model logs are returned. Unreported account balances and model pool quotas remain explicitly unknown.
+- Desktop window recovery, single-instance restore, and optional Codex/Claude Code focus controls with Gemini gating.
+
+### Changed
+- Claude Opus 5.5 is temporarily unavailable; GPT-6 Astra is unlimited; GPT-6.1 Sol is unlimited, recommended, and shows its live low multiplier.
+- Dated announcements override older policies; notice aliases match the actual API model IDs.
+- The model picker, current notice, help panels, compact display, and quota schedules update from the synchronized provider data.
+- Quota countdowns and auto-focus jobs use only the selected model's current published schedule. Unlimited and suspended models have no refill timer or release trigger.
+- Responses API diagnostics support Sol and Astra, and suspended models are not probed.
+
 ## [1.0.0] - 2026-10-04
 
 ### Added

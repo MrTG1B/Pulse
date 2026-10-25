@@ -10,20 +10,21 @@ Pulse is built with security, privacy, and zero-telemetry principles for develop
    - The embedded HTTP server binds strictly to IPv4 loopback (`127.0.0.1`) on a dynamic non-conflicting TCP port.
    - It is never exposed to local networks (LAN) or public interfaces.
 
-2. **Zero Third-Party Telemetry**
-   - Pulse does not collect user data, tracking analytics, usage metrics, or logs.
-   - Network communication is restricted strictly to:
-     - Target gateway: `https://agentrouter.org` (or configured backup `https://ps.air-outer.com`).
-     - Local loopback: `http://127.0.0.1:[port]`.
+2. **No Analytics Telemetry**
+   - Pulse reads model, notice, pricing and reported usage data from the configured AgentRouter gateway. Provider metadata is cached locally; usage statistics are held in memory and are not uploaded as analytics.
+   - The interface talks to the local loopback server and loads its web fonts from Google Fonts.
+   - Optional Gemini verification is disabled by default. When enabled, candidate window titles, window or screen screenshots, and trigger summaries can be sent to Google's API for gating and narration.
 
 3. **Windows DPAPI Local Key Encryption**
-   - **Windows DPAPI**: Pulse encrypts AgentRouter API keys at rest using the Windows Data Protection API (`CryptProtectData` via Windows `crypt32.dll`). The encrypted value is bound to the Windows user context and is not stored as plaintext.
+   - **Windows DPAPI**: Pulse encrypts AgentRouter and optional Gemini API keys at rest using the Windows Data Protection API (`CryptProtectData` via Windows `crypt32.dll`). The encrypted value is bound to the Windows user context and is not stored as plaintext.
    - In `config.json` (or `%APPDATA%/Pulse/config.json`), keys are stored strictly as an opaque encrypted ciphertext blob prefixed with `enc:dpapi:`. Plaintext keys are **never written to disk**.
    - **User Context Isolation**: Because encryption is bound to the logged-in user's Windows credentials, copying or exfiltrating `config.json` to another machine or accessing it from another user account on the same machine cannot decrypt the secret.
    - **Automatic Legacy Migration**: If a legacy plaintext `config.json` is detected on startup, Pulse automatically encrypts it with DPAPI and immediately overwrites and purges the plaintext key from disk.
    - **Local API Security**: The local backend API never exposes raw keys over HTTP (only `has_api_key` and masked strings `sk-••••••••1234`).
    - **Non-Windows Environments**: Non-Windows test environments (e.g. cross-platform CI runners) use reversible encoding (`dev:b64:`) exclusively for testing and should not be considered secure credential storage. Production Windows builds exclusively utilize Windows DPAPI.
    - `config.json` is explicitly gitignored to prevent accidental commits to source control repositories.
+   - Provider caches contain no API keys and are isolated by a hash of the configured gateway and key. Changing keys clears cached usage and prevents reuse of the previous key's model status results.
+   - Remote notices and model names are inserted into the interface as text, so their HTML is not executed.
 
 4. **Compatible AgentRouter Client Headers**
    - Pulse utilizes authentic, compatible client identification headers matching supported coding client profiles (`claude-cli/1.0.108` for Claude Code and Codex) to ensure seamless API interoperability without encountering unauthorized client rejections.
@@ -39,8 +40,8 @@ Only the latest release branch of Pulse receives active security updates and vul
 
 | Version | Supported |
 |---|---|
-| 1.0.x | :white_check_mark: Yes |
-| < 1.0.0 | :x: No |
+| 1.1.x | :white_check_mark: Yes |
+| < 1.1.0 | :x: No |
 
 ---
 
