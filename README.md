@@ -7,7 +7,7 @@
 [![Target Service](https://img.shields.io/badge/target%20service-agentrouter.org-B8FF3D?style=flat-square&labelColor=111111)](https://agentrouter.org)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011%20(64--bit)-0078D6?style=flat-square&logo=windows)](https://github.com/MrTG1B/Pulse/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-135%2F135%20passed-brightgreen?style=flat-square)](tests)
+[![Tests](https://img.shields.io/badge/tests-137%2F137%20passed-brightgreen?style=flat-square)](tests)
 
 [ **Download for Windows** ](https://github.com/MrTG1B/Pulse/releases/download/v1.1.0/Pulse.exe) • [ **User Guide** ](docs/USER_GUIDE.md) • [ **Security Policy** ](docs/SECURITY.md) • [ **GitHub Release** ](https://github.com/MrTG1B/Pulse/releases/tag/v1.1.0)
 
@@ -185,7 +185,7 @@ Pulse/
 │   ├── build.bat           # 1-click Windows build batch file
 │   ├── generate_social_preview.py # Social card generator
 │   └── publish_release.py  # GitHub Release publishing automation
-├── tests/                  # Automated test suite (135/135 passing)
+├── tests/                  # Automated test suite (137/137 passing)
 ├── app.py                  # Root launcher entrypoint
 ├── requirements.txt        # Python package dependencies
 └── LICENSE                 # MIT License

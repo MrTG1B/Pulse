@@ -70,6 +70,28 @@ class TestReleasePublisher(unittest.TestCase):
         self.session.post.assert_not_called()
         self.session.patch.assert_not_called()
 
+    def test_missing_tag_422_allows_new_release(self):
+        self.session.get.side_effect = [
+            response(422, {'message': f'No commit found for SHA: {publisher.TAG_NAME}'}),
+            response(404, {}),
+        ]
+        self.session.post.side_effect = [
+            response(201, self.release),
+            response(201, {'size': self.size, 'digest': f'sha256:{self.digest}',
+                           'browser_download_url': 'https://github.com/test/Pulse.exe'}),
+        ]
+        self.session.patch.return_value = response(200, {'html_url': 'https://github.com/test/release'})
+        self.assertEqual(self.run_publish(), 0)
+        self.assertEqual(self.session.post.call_args_list[0].kwargs['json']['target_commitish'], self.target)
+        self.assertEqual(self.session.patch.call_args.kwargs['json'], {'draft': False})
+
+    def test_unrelated_tag_422_prevents_mutation(self):
+        self.session.get.return_value = response(422, {'message': 'Validation Failed'})
+        self.assertEqual(self.run_publish(), 1)
+        self.session.post.assert_not_called()
+        self.session.patch.assert_not_called()
+        self.session.delete.assert_not_called()
+
     def test_existing_different_asset_is_preserved(self):
         release = dict(self.release, assets=[{'name': 'Pulse.exe', 'digest': 'sha256:different', 'size': self.size}])
         self.session.get.side_effect = [response(200, {'sha': self.target}), response(200, release)]

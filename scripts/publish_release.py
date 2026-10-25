@@ -87,7 +87,11 @@ def publish(dry_run=False, target_commit=None):
     if tag_commit.status_code == 200 and tag_commit.json().get("sha") != target_commit:
         print("The release tag points to a different commit; it has been preserved.")
         return 1
-    if tag_commit.status_code not in (200, 404):
+    missing_tag = tag_commit.status_code == 404 or (
+        tag_commit.status_code == 422
+        and tag_commit.json().get("message") == f"No commit found for SHA: {TAG_NAME}"
+    )
+    if tag_commit.status_code != 200 and not missing_tag:
         print(f"Release tag lookup failed: HTTP {tag_commit.status_code}")
         return 1
     existing = session.get(f"{api}/tags/{TAG_NAME}", timeout=(8, 20))
